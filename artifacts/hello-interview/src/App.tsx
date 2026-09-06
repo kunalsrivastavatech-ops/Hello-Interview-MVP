@@ -4,7 +4,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, Mic, RefreshCw, RotateCcw, ShieldCheck, Target, TriangleAlert, UserRound, Video } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, Mic, RefreshCw, RotateCcw, ShieldCheck, Target, TriangleAlert, UserRound, Video, Volume2 } from 'lucide-react';
 import {
   Route,
   Switch,
@@ -17,6 +17,7 @@ const queryClient = new QueryClient();
 type Candidate = { name: string; roll: string; company: string; track: string };
 type Answer = { text: string; elapsed: number };
 type MediaStatus = 'idle' | 'requesting' | 'active' | 'error';
+type InterviewerState = 'ready' | 'speaking' | 'listening' | 'evaluating' | 'next';
 
 const questions = [
   { question: 'Walk us through a technical project you are proud to have shipped.', note: 'Keep your answer structured: context, decisions, and measurable outcome.', dimension: 'Technical depth' },
@@ -137,9 +138,11 @@ function Arena() {
   const [remaining, setRemaining] = useState(90);
   const [mediaStatus, setMediaStatus] = useState<MediaStatus>('idle');
   const [mediaError, setMediaError] = useState('');
+  const [interviewerState, setInterviewerState] = useState<InterviewerState>('ready');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRequestRef = useRef(0);
+  const speechRequestRef = useRef(0);
 
   const stopMedia = () => {
     mediaRequestRef.current += 1;
@@ -195,6 +198,31 @@ function Arena() {
     }
   };
 
+  const speakQuestion = (question: string) => {
+    speechRequestRef.current += 1;
+    const speechRequestId = speechRequestRef.current;
+
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setInterviewerState('listening');
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    setInterviewerState('speaking');
+    const utterance = new SpeechSynthesisUtterance(question);
+    utterance.rate = 0.92;
+    utterance.pitch = 0.95;
+    utterance.volume = 1;
+    utterance.onend = () => {
+      if (speechRequestId === speechRequestRef.current) setInterviewerState('listening');
+    };
+    utterance.onerror = () => {
+      if (speechRequestId !== speechRequestRef.current) return;
+      setInterviewerState('listening');
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
   useEffect(() => { if (!candidate.name) setLocation('/setup'); }, [candidate.name, setLocation]);
   useEffect(() => {
     void requestMedia();
@@ -223,22 +251,64 @@ function Arena() {
         setMediaStatus('error');
       });
   }, [mediaStatus]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => speakQuestion(questions[current].question), 450);
+    return () => {
+      window.clearTimeout(timer);
+      speechRequestRef.current += 1;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    };
+  }, [current]);
   useEffect(() => { setRemaining(90); setAnswer(answers[current]?.text || ''); }, [current, answers]);
   useEffect(() => { const interval = window.setInterval(() => setRemaining((value) => value > 0 ? value - 1 : 0), 1000); return () => window.clearInterval(interval); }, [current]);
   useEffect(() => { if (remaining === 0) advance(); }, [remaining]);
   const advance = () => {
-    const next = [...answers]; next[current] = { text: answer, elapsed: 90 - remaining }; setAnswers(next); localStorage.setItem('hello-interview-answers', JSON.stringify(next));
-    if (current === questions.length - 1) setLocation('/report'); else setCurrent((value) => value + 1);
+    if (interviewerState === 'evaluating' || interviewerState === 'next') return;
+    setInterviewerState('evaluating');
+    speechRequestRef.current += 1;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    const next = [...answers];
+    next[current] = { text: answer, elapsed: 90 - remaining };
+    setAnswers(next);
+    localStorage.setItem('hello-interview-answers', JSON.stringify(next));
+    window.setTimeout(() => {
+      if (current === questions.length - 1) {
+        setLocation('/report');
+        return;
+      }
+      setInterviewerState('next');
+      window.setTimeout(() => setCurrent((value) => value + 1), 350);
+    }, 550);
   };
   const item = questions[current];
+  const interviewerLabel: Record<InterviewerState, string> = {
+    ready: 'AI READY',
+    speaking: 'AI SPEAKING',
+    listening: 'LISTENING TO CANDIDATE',
+    evaluating: 'EVALUATING',
+    next: 'NEXT QUESTION',
+  };
+  const interviewerCaption: Record<InterviewerState, string> = {
+    ready: 'Your interviewer is ready to begin.',
+    speaking: 'Listen closely. The interviewer is asking the question aloud.',
+    listening: 'The room is yours. Take your time and answer clearly.',
+    evaluating: 'Reviewing the answer before moving forward.',
+    next: 'Preparing the next question.',
+  };
   return <div className="app-shell"><Header arena /><main className="arena-page">
     <div className="arena-top"><div className="page-frame arena-top-inner"><div><div className="arena-kicker">Candidate / {candidate.name || 'Session'} / {candidate.company || 'Target company'}</div><h1 className="arena-title">Interview arena</h1></div><div className={`timer ${remaining < 20 ? 'warning' : ''}`} aria-live="polite" data-testid="status-countdown"><Clock3 size={16} /> {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</div></div></div>
     <div className="arena-content">
       <div className="media-stage">
         <div className="media-panel interviewer-panel">
-          <div className="media-panel-head"><span>AI INTERVIEWER</span><span className="media-ready">PREPARING</span></div>
-          <div className="interviewer-visual"><div className="interviewer-avatar"><UserRound size={52} /></div><span className="interviewer-wave">● ● ●</span></div>
-          <p className="media-caption">Your interviewer feed will speak the question aloud in the next step.</p>
+          <div className="media-panel-head"><span>AI INTERVIEWER</span><span className={`media-ready interviewer-state-pill ${interviewerState === 'speaking' ? 'speaking' : interviewerState === 'listening' ? 'listening' : interviewerState === 'evaluating' ? 'evaluating' : ''}`} aria-live="polite">{interviewerLabel[interviewerState]}</span></div>
+          <div className={`interviewer-visual ${interviewerState === 'speaking' ? 'speaking' : ''} ${interviewerState === 'listening' ? 'listening' : ''}`}>
+            <div className="interviewer-avatar"><UserRound size={52} /></div>
+            <div className="interviewer-orbit orbit-one" /><div className="interviewer-orbit orbit-two" />
+            <span className="interviewer-wave" aria-hidden="true">● ● ●</span>
+          </div>
+          <div className="interviewer-state-row"><span className={`state-dot ${interviewerState}`} /> <strong>{interviewerLabel[interviewerState]}</strong><button className="replay-question" onClick={() => speakQuestion(item.question)} disabled={interviewerState === 'evaluating' || interviewerState === 'next'}><Volume2 size={14} /> REPLAY</button></div>
+          <p className="media-caption" aria-live="polite">{interviewerCaption[interviewerState]}</p>
+          <div className="interviewer-flow" aria-label="Interview state flow">{(['ready', 'speaking', 'listening', 'evaluating', 'next'] as InterviewerState[]).map((state) => <span key={state} className={interviewerState === state ? 'current' : ''}>{interviewerLabel[state]}</span>)}</div>
         </div>
         <div className="media-panel candidate-panel">
           <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
@@ -253,7 +323,7 @@ function Arena() {
           </div>
         </div>
       </div>
-      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p><textarea className="answer-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" /><div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answer.trim() ? answer.trim().split(/\s+/).length : 0} words / written locally</span><button className="neo-button" onClick={advance} data-testid="button-submit-next">{current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
+      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p><textarea className="answer-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" /><div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answer.trim() ? answer.trim().split(/\s+/).length : 0} words / written locally</span><button className="neo-button" onClick={advance} disabled={interviewerState === 'evaluating' || interviewerState === 'next'} data-testid="button-submit-next">{interviewerState === 'evaluating' ? 'EVALUATING…' : current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
   </main></div>;
 }
 

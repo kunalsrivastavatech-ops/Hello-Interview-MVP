@@ -302,9 +302,19 @@ button { cursor: pointer; }
 .media-panel-head { display: flex; justify-content: space-between; align-items: center; color: #dce7df; font-family: var(--app-font-mono); font-size: 10px; letter-spacing: .1em; }
 .media-ready { border: 1px solid #84978b; color: #b7c3ba; padding: 4px 7px; }
 .media-ready.active { border-color: #7af1e4; color: #7af1e4; }
-.interviewer-visual { min-height: 194px; margin-top: 14px; background: #f7f4eb; border: 2px solid #061006; display: grid; place-items: center; position: relative; }
-.interviewer-avatar { width: 105px; height: 105px; display: grid; place-items: center; border-radius: 50%; background: #f8b2a9; border: 3px solid #061006; color: #061006; }
+.interviewer-visual { min-height: 194px; margin-top: 14px; background: #f7f4eb; border: 2px solid #061006; display: grid; place-items: center; position: relative; overflow: hidden; }
+.interviewer-avatar { width: 105px; height: 105px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg, #f8b2a9, #d78d8e); border: 3px solid #061006; color: #061006; box-shadow: 0 8px 0 rgba(6, 16, 6, .14); position: relative; z-index: 2; }
+.interviewer-visual.speaking .interviewer-avatar { animation: interviewer-breathe 1.35s ease-in-out infinite; }
+.interviewer-visual.speaking::before { content: ''; position: absolute; width: 150px; height: 150px; border: 2px solid #10b981; border-radius: 50%; animation: interviewer-pulse 1.45s ease-out infinite; }
+.interviewer-visual.listening .interviewer-avatar { box-shadow: 0 8px 0 rgba(6, 16, 6, .14), 0 0 0 7px rgba(16, 185, 129, .15); }
+.interviewer-orbit { position: absolute; border: 1px solid rgba(5, 150, 105, .38); border-radius: 50%; transform: rotate(-16deg); }
+.orbit-one { width: 180px; height: 62px; }.orbit-two { width: 210px; height: 92px; transform: rotate(22deg); }
 .interviewer-wave { position: absolute; bottom: 12px; right: 16px; color: #059669; letter-spacing: .26em; font-size: 11px; }
+.interviewer-state-row { display: flex; align-items: center; gap: 8px; margin-top: 13px; color: #e8f0ea; font-family: var(--app-font-mono); font-size: 11px; letter-spacing: .04em; }
+.interviewer-state-row strong { font-weight: 500; }
+.state-dot { width: 8px; height: 8px; border-radius: 50%; background: #84978b; }.state-dot.speaking { background: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, .14); }.state-dot.listening { background: #7af1e4; }.state-dot.evaluating { background: #ffdf62; }
+.replay-question { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #52675a; background: transparent; color: #b8c8bd; padding: 6px 8px; font-family: var(--app-font-mono); font-size: 9px; cursor: pointer; }.replay-question:hover { border-color: #7af1e4; color: #7af1e4; }.replay-question:disabled { cursor: not-allowed; opacity: .45; }
+.interviewer-flow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }.interviewer-flow span { color: #718176; font-family: var(--app-font-mono); font-size: 9px; letter-spacing: .04em; }.interviewer-flow span:not(:last-child)::after { content: '→'; margin-left: 6px; color: #52675a; }.interviewer-flow span.current { color: #7af1e4; }
 .media-caption { color: #a9b8ae; font-size: 12px; line-height: 1.5; margin: 12px 2px 0; }
 .camera-viewport { position: relative; height: 194px; margin-top: 14px; background: #0b120e; border: 2px solid #506359; display: grid; place-items: center; overflow: hidden; }
 .camera-viewport.live { border-color: #10b981; }
@@ -317,6 +327,8 @@ button { cursor: pointer; }
 .device-status.active { border-color: #10b981; color: #7af1e4; }
 .retry-media { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: #ffdf62; padding: 6px 2px; font-family: var(--app-font-mono); font-size: 10px; cursor: pointer; }
 .retry-media:disabled { cursor: wait; opacity: .55; }
+@keyframes interviewer-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-3px) scale(1.025); } }
+@keyframes interviewer-pulse { 0% { transform: scale(.78); opacity: .85; } 100% { transform: scale(1.25); opacity: 0; } }
 .question-count { color: #7af1e4; font-family: var(--app-font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
 .question { margin: 12px 0 24px; font-size: clamp(28px, 4.5vw, 52px); line-height: 1.02; letter-spacing: -.06em; }
 .question-note { color: #b4c3ba; font-size: 14px; line-height: 1.5; }

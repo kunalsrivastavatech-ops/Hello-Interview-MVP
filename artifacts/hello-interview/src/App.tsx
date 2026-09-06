@@ -139,8 +139,10 @@ function Arena() {
   const [mediaError, setMediaError] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRequestRef = useRef(0);
 
   const stopMedia = () => {
+    mediaRequestRef.current += 1;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -148,6 +150,8 @@ function Arena() {
 
   const requestMedia = async () => {
     stopMedia();
+    const requestId = mediaRequestRef.current + 1;
+    mediaRequestRef.current = requestId;
     setMediaError('');
     if (!navigator.mediaDevices?.getUserMedia) {
       setMediaStatus('error');
@@ -155,24 +159,37 @@ function Arena() {
       return;
     }
 
+    console.info('[Hello Interview] Camera requested');
     setMediaStatus('requesting');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+      if (requestId !== mediaRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
+
+      console.info('[Hello Interview] Camera permission granted');
+      console.info('[Hello Interview] Video tracks available:', stream.getVideoTracks().length, 'Audio tracks available:', stream.getAudioTracks().length);
+      streamRef.current = stream;
+      stream.getTracks().forEach((track) => {
+        track.addEventListener('ended', () => {
+          console.warn('[Hello Interview] Media track ended:', track.kind);
+          setMediaError(`The ${track.kind} track ended unexpectedly. Check your device and retry access.`);
+          setMediaStatus('error');
+        }, { once: true });
+      });
       setMediaStatus('active');
     } catch (error) {
       const name = error instanceof DOMException ? error.name : '';
+      const actualMessage = error instanceof Error ? error.message : String(error);
       const message = name === 'NotAllowedError' || name === 'SecurityError'
-        ? 'Camera and microphone permission was denied. Allow access in your browser settings or continue with written answers.'
+        ? `Camera and microphone permission was denied (${name}: ${actualMessage || 'no additional browser message'}). Allow access in your browser settings or continue with written answers.`
         : name === 'NotFoundError'
-          ? 'No camera or microphone was found. Connect a device or continue with written answers.'
+          ? `No camera or microphone was found (${name}: ${actualMessage || 'no additional browser message'}). Connect a device or continue with written answers.`
           : name === 'NotReadableError'
-            ? 'Your camera or microphone is already in use by another app. Close it and retry, or continue with written answers.'
-            : 'Camera and microphone access could not start. You can retry or continue with written answers.';
+            ? `Your camera or microphone is already in use (${name}: ${actualMessage || 'no additional browser message'}). Close it and retry, or continue with written answers.`
+            : `Camera and microphone access could not start (${name || 'UnknownError'}: ${actualMessage || 'no additional browser message'}). You can retry or continue with written answers.`;
+      console.error('[Hello Interview] Camera stream failed:', error);
       setMediaError(message);
       setMediaStatus('error');
     }
@@ -183,6 +200,29 @@ function Arena() {
     void requestMedia();
     return stopMedia;
   }, []);
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    const stream = streamRef.current;
+    if (mediaStatus !== 'active' || !videoElement || !stream) return;
+    if (videoElement.srcObject === stream) return;
+
+    videoElement.autoplay = true;
+    videoElement.playsInline = true;
+    videoElement.muted = true;
+    videoElement.srcObject = stream;
+    console.info('[Hello Interview] Stream assigned');
+
+    void videoElement.play()
+      .then(() => {
+        console.info('[Hello Interview] Video playing');
+      })
+      .catch((error: unknown) => {
+        const actualMessage = error instanceof Error ? error.message : String(error);
+        console.error('[Hello Interview] Video playback failed:', error);
+        setMediaError(`Video playback failed (${actualMessage || 'no additional browser message'}). Retry camera access.`);
+        setMediaStatus('error');
+      });
+  }, [mediaStatus]);
   useEffect(() => { setRemaining(90); setAnswer(answers[current]?.text || ''); }, [current, answers]);
   useEffect(() => { const interval = window.setInterval(() => setRemaining((value) => value > 0 ? value - 1 : 0), 1000); return () => window.clearInterval(interval); }, [current]);
   useEffect(() => { if (remaining === 0) advance(); }, [remaining]);
@@ -203,7 +243,8 @@ function Arena() {
         <div className="media-panel candidate-panel">
           <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
           <div className={`camera-viewport ${mediaStatus === 'active' ? 'live' : ''}`}>
-            {mediaStatus === 'active' ? <video ref={videoRef} autoPlay muted playsInline aria-label="Your live camera preview" data-testid="video-candidate-preview" /> : <div className="camera-placeholder"><Video size={30} /><strong>{mediaStatus === 'requesting' ? 'Requesting device access…' : mediaStatus === 'error' ? 'Camera preview unavailable' : 'Camera preview loading'}</strong><span>{mediaError || 'Your preview will appear here.'}</span></div>}
+            <video ref={videoRef} autoPlay muted playsInline aria-label="Your live camera preview" data-testid="video-candidate-preview" />
+            {mediaStatus !== 'active' && <div className="camera-status-overlay"><Video size={30} /><strong>{mediaStatus === 'requesting' ? 'Requesting device access…' : mediaStatus === 'error' ? 'Camera preview unavailable' : 'Camera preview loading'}</strong><span>{mediaError || 'Your preview will appear here.'}</span></div>}
           </div>
           <div className="device-status-row">
             <span className={`device-status ${mediaStatus === 'active' ? 'active' : ''}`}><Video size={14} /> Camera {mediaStatus === 'active' ? 'on' : 'pending'}</span>

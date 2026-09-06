@@ -306,12 +306,12 @@ button { cursor: pointer; }
 .interviewer-avatar { width: 105px; height: 105px; display: grid; place-items: center; border-radius: 50%; background: #f8b2a9; border: 3px solid #061006; color: #061006; }
 .interviewer-wave { position: absolute; bottom: 12px; right: 16px; color: #059669; letter-spacing: .26em; font-size: 11px; }
 .media-caption { color: #a9b8ae; font-size: 12px; line-height: 1.5; margin: 12px 2px 0; }
-.camera-viewport { margin-top: 14px; min-height: 194px; background: #0b120e; border: 2px solid #506359; display: grid; place-items: center; overflow: hidden; }
+.camera-viewport { position: relative; height: 194px; margin-top: 14px; background: #0b120e; border: 2px solid #506359; display: grid; place-items: center; overflow: hidden; }
 .camera-viewport.live { border-color: #10b981; }
-.camera-viewport video { width: 100%; height: 194px; display: block; object-fit: cover; transform: scaleX(-1); }
-.camera-placeholder { padding: 24px; display: grid; justify-items: center; gap: 8px; color: #9eb0a4; text-align: center; }
-.camera-placeholder strong { color: #f2f5ef; font-size: 15px; }
-.camera-placeholder span { max-width: 300px; font-size: 12px; line-height: 1.45; }
+.camera-viewport video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; visibility: visible; opacity: 1; object-fit: cover; transform: scaleX(-1); }
+.camera-status-overlay { position: absolute; inset: 0; z-index: 1; padding: 24px; display: grid; place-items: center; align-content: center; gap: 8px; background: rgba(11, 18, 14, .96); color: #9eb0a4; text-align: center; }
+.camera-status-overlay strong { color: #f2f5ef; font-size: 15px; }
+.camera-status-overlay span { max-width: 300px; font-size: 12px; line-height: 1.45; }
 .device-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .device-status { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #4b6052; color: #9eb0a4; padding: 6px 8px; font-family: var(--app-font-mono); font-size: 10px; text-transform: uppercase; }
 .device-status.active { border-color: #10b981; color: #7af1e4; }

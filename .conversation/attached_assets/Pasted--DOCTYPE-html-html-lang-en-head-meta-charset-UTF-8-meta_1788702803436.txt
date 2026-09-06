@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Interviews - Welcome</title>
+    <!-- Linking the external CSS file -->
+    <link rel="stylesheet" href="welcome.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header>
+        <div class="nav-container">
+            <div class="logo">HELLO <span>INTERVIEWS</span></div>
+            <nav class="nav-links">
+                <a href="#specifications">SPECIFICATIONS</a>
+                <a href="#about">ABOUT</a>
+                <a href="#contact">CONTACT US</a>
+
+
+
+                <!-- just the change i made  -->
+
+                
+                <button class="btn-login" onclick="window.location.href='login.html'">Log In ➔</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Hero Content Section -->
+    <main class="hero-section">
+        <h1 class="hero-title">CONQUER YOUR PLACEMENT FEAR</h1>
+        <p class="hero-subtitle">Train inside a high-fidelity simulation and crack your first campus drive flawlessly.</p>
+        
+        <!-- The Main Interactive Action Button (Call-To-Action) -->
+        <div class="cta-container">
+            <button class="btn-main-cta" onclick="window.location.href='setup.html'">Start Free Simulation →</button>
+        </div>
+
+        <!-- Lower Visual Grid: Robot Card & Laptop Dashboard Mockup -->
+        <div class="graphics-grid">
+            
+            <!-- Left Column: The Friendly Animated AI Character Card -->
+            <div class="robot-card">
+                <div class="sticker-hello">HELLO! ✨</div>
+                <div class="robot-avatar-placeholder">
+                    <!-- This emoji matches the placement of your Figma robot graphic -->
+                    <span class="robot-emoji">🤖</span>
+                </div>
+            </div>
+
+            <!-- Right Column: The Dashboard Mockup Container Panel -->
+            <div class="mockup-panel">
+                <div class="sticker-muted">YOU'RE MUTED! 🎙️</div>
+                <div class="laptop-frame">
+                    <div class="mockup-screen-header">
+                        <span class="dot-green">● DESIGN SYMPOSIUM (LIVE)</span>
+                        <span class="mockup-time">10:45 AM</span>
+                    </div>
+                    <!-- Internal simulated video layout inside the mockup box -->
+                    <div class="mockup-video-layout">
+                        <div class="interviewer-box">👩‍💼</div>
+                        <div class="candidate-box-mini">👨‍💻</div>
+                    </div>
+                </div>
+                <h2 class="mockup-footer-title">JOIN THE INTERVIEW !</h2>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 1. SPECIFICATIONS SECTION -->
+    <section id="specifications" class="content-section text-dark">
+        <div class="section-container">
+            <h2 class="section-title">System Specifications</h2>
+            <div class="specs-grid">
+                <div class="spec-box"><h3>🎙️ Audio AI Analytics</h3><p>Real-time speech rate and volume detection.</p></div>
+                <div class="spec-box"><h3>⏱️ 4-Sec Sentinel</h3><p>Automatic tracking of high-stress silent zones.</p></div>
+                <div class="spec-box"><h3>🔒 Full Lockdown</h3><p>Browser integrity verification & tab anti-cheat.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ABOUT SECTION -->
+    <section id="about" class="content-section text-light">
+        <div class="section-container">
+            <h2 class="section-title">About Hello Interviews</h2>
+            <p class="section-desc">
+                Engineered specifically for B.Tech CSE Core freshers to bridge the gap between hard technical coding skills and automated corporate placement screenings. We replicate the exact high-stress environments of gateways like CoCubes and AMCAT to build absolute communication confidence.
+            </p>
+        </div>
+    </section>
+
+    <!-- 3. CONTACT SECTION -->
+    <section id="contact" class="content-section text-dark">
+        <div class="section-container">
+            <h2 class="section-title">Contact Us</h2>
+            <h3>kunalsrivastava.tech@gmail.com</h3>
+            <p class="section-desc"> want to ask anything ? just drop here , we will get back to you as soon as possible </p>
+            <form class="contact-form" onsubmit="event.preventDefault(); alert('Message Sent Successfully!');">
+                <input type="email" placeholder="Enter your GLA Student Email" required>
+                <textarea placeholder="Your Message..." rows="4" required></textarea>
+                <button type="submit" class="btn-main-cta" style="margin: 0 auto; display: block; font-size: 14px; padding: 10px 25px;">Send Message</button>
+            </form>
+        </div>
+    </section>
+
+
+
+</body>
+</html>

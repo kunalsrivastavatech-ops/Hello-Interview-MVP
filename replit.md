@@ -1,6 +1,6 @@
-# [Project name]
+# Hello Interview
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Hello Interview is a local-first placement interview simulator that helps college students rehearse a timed five-question corporate interview and review a private performance report.
 
 ## Run & Operate
 
@@ -22,23 +22,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/hello-interview/src/App.tsx` — Phase 1 screens, local interview state, question set, scoring, and route flow.
+- `artifacts/hello-interview/src/index.css` — Hello Interview visual system and responsive layout.
+- `artifacts/hello-interview/vite.config.ts` — Vite artifact routing and preview configuration.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Phase 1 is local-first: candidate details and answers are stored in browser localStorage so one complete interview works without accounts, AI, or a database.
+- The interview uses a fixed five-question set and a simple transparent score so the MVP remains useful without an external AI provider.
+- Monitoring copy is deliberately cautious: timing and tab changes are framed as user-visible signals, not proof of misconduct.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Welcome page with the supplied Hello Interview corporate rehearsal visual language.
+- Candidate checkpoint for name, roll number, company, and assessment track.
+- Five-question interview arena with a 90-second question timer and written answer capture.
+- Private final report with overall score, dimension readout, strengths, improvement areas, and next practice topics.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Preserve the supplied high-fidelity black/white/green Hello Interview design rather than replacing it with a new UI.
+- Build incrementally: Phase 1 first, then camera/microphone, speech, AI evaluation, persistence, authentication, and advanced signals later.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The app is intentionally not a proctoring system in Phase 1; do not describe local timing or tab signals as cheating detection.
+- The artifact build requires `PORT` and `BASE_PATH`, which are supplied by the managed workflow.
 
 ## Pointers
 

@@ -1,0 +1,386 @@
+/* Reset and Base Theme Setup matching your Figma choices */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #ffffff; /* Keeping the clean white background layout from your image */
+    color: #000000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* 1. Header Navigation Styling */
+header {
+    background-color: #051405; /* Your dark forest green navbar panel fill */
+    border-bottom: 2px solid #10b981; /* Neon green bottom stripe border alignment */
+    padding: 18px 40px;
+    width: 100%;
+}
+
+.nav-container {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ffffff;
+}
+
+.logo span {
+    color: #10b981;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 35px;
+}
+
+.nav-links a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.btn-login {
+    background-color: #3b82f6; /* Blue login action button color */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* 2. Main Workspace Layout */
+.hero-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-title {
+    font-size: 54px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+    color: #000000;
+}
+
+.hero-subtitle {
+    font-size: 20px;
+    color: #000000; 
+    max-width: 800px;
+    margin-bottom: 35px;
+    font-weight: 700;
+}
+
+/* 3. Central Launcher Button Setup */
+.cta-container {
+    margin-bottom: 50px;
+}
+
+.btn-main-cta {
+    background: linear-gradient(135deg, #10b981, #059669); 
+    color: white;
+    border: none;
+    padding: 15px 35px;
+    border-radius: 12px; 
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+/* 4. Lower Interactive Components Grid Columns Layout */
+.graphics-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 0.7fr 1.3fr; /* Matches your Figma spatial distribution balance */
+    gap: 40px;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* Left Card Component: Robot Display Wrapper */
+.robot-card {
+    background-color: #ffffff;
+    border: 3px solid #000000;
+    border-radius: 24px;
+    height: 380px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 0px #000000;
+}
+
+.robot-avatar-placeholder {
+    width: 260px;
+    height: 260px;
+    background-color: #79f1eb; /* Bright teal matching your exact Figma card background fill */
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #ffffff;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+.robot-emoji {
+    font-size: 130px;
+}
+
+/* Right Card Component: Laptop Monitor Setup Grid */
+.mockup-panel {
+    background-color: #ffffff; /* Bright white contrasting display canvas back block */
+    border: 3px solid #000000;
+    border-radius: 24px;
+    padding: 40px;
+    height: 380px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #000000;
+    box-shadow: 0 4px 0px #000000;
+}
+
+.laptop-frame {
+    background-color: #1a2333; /* Dark display screen canvas background matching image */
+    border: 4px solid #000000;
+    border-radius: 16px;
+    flex: 1;
+    margin-bottom: 15px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    color: #ffffff;
+}
+
+.mockup-screen-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #1f2937;
+    padding-bottom: 8px;
+}
+
+.dot-green { color: #10b981; }
+.mockup-time { color: #9ca3af; }
+
+.mockup-video-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr;
+    gap: 15px;
+}
+
+.interviewer-box {
+    background-color: #fca5a5; /* Pink fill panel matching your interviewer placeholder */
+    border-radius: 12px;
+    border: 3px solid #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 50px;
+}
+
+.candidate-box-mini {
+    background-color: #93c5fd; /* Light blue fill panel matching your candidate web feed */
+    border-radius: 12px;
+    border: 3px solid #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+}
+
+.mockup-footer-title {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* 5. Custom Sticker Components Layout Overlays */
+
+/* Red Dot Tag on Left Card corner */
+.robot-card::before {
+    content: "★";
+    color: white;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 25px;
+    left: -15px;
+    width: 32px;
+    height: 32px;
+    background-color: #ff5722; /* Coral red star badge matching image */
+    border: 3px solid #000000;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+/* Plus Badge at the bottom right of the robot card */
+.robot-card::after {
+    content: "＋";
+    color: white;
+    font-size: 16px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 25px;
+    right: -15px;
+    width: 34px;
+    height: 34px;
+    background-color: #2196f3; /* Blue navigation selector block icon */
+    border: 3px solid #000000;
+    border-radius: 50%;
+    z-index: 10;
+}
+
+.sticker-hello {
+    position: absolute;
+    top: -20px;
+    right: 30px;
+    background-color: #fff176; /* Vibrant yellow hello cloud sticker */
+    color: #000000;
+    border: 3px solid #000000;
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 16px;
+    transform: rotate(6deg);
+    box-shadow: 2px 2px 0px #000000;
+    z-index: 10;
+}
+
+.sticker-muted {
+    position: absolute;
+    top: -15px;
+    right: -20px;
+    background-color: #ffebee; /* Soft pink background theme for the muted warning badge */
+    color: #ff1744;
+    border: 3px solid #000000;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 900;
+    font-size: 12px;
+    transform: rotate(8deg);
+    box-shadow: 2px 2px 0px #000000;
+    z-index: 10;
+}
+
+
+
+
+
+
+
+/* --- METHOD 2 SINGLE PAGE SCROLLING STYLES --- */
+
+/* Magic Property: Isse top navbar ke links par click karte hi page bina jhatke ke smoothly niche slide karega */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Sections Base Layout */
+.content-section {
+    padding: 100px 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    border-top: 3px solid #000000;
+}
+
+/* Background Color contrasts for sections */
+.text-dark { background-color: #ffffff; color: #000000; }
+.text-light { background-color: #111827; color: #ffffff; }
+
+.section-container {
+    max-width: 1000px;
+    width: 100%;
+    text-align: center;
+}
+
+.section-title {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.section-desc {
+    font-size: 18px;
+    line-height: 1.8;
+    color: inherit;
+    opacity: 0.8;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Specifications Grid (3 Columns Layout) */
+.specs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+    margin-top: 40px;
+}
+
+.spec-box {
+    padding: 25px;
+    border: 3px solid #000000;
+    border-radius: 16px;
+    background-color: #f9fafb;
+    box-shadow: 0 4px 0px #000000;
+}
+
+.spec-box h3 { margin-bottom: 10px; font-size: 18px; }
+.spec-box p { font-size: 14px; color: #4b5563; }
+
+/* Contact Form Center Align CSS */
+.contact-form {
+    max-width: 500px;
+    margin: 35px auto 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.contact-form input, .contact-form textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 3px solid #000000;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+    box-shadow: 0 3px 0px #000000;
+}

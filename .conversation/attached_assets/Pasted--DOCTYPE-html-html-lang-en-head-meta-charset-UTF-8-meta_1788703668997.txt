@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hello Interviews - Candidate Onboarding</title>
+    <!-- Humne iski styling file ka naam setup.css rakha hai -->
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar (Same tumhare pehle page jaisa design) -->
+    <header>
+        <div class="nav-container">
+            <div class="logo" onclick="window.location.href='welcome.html'" style="cursor: pointer;">
+                HELLO <span>INTERVIEWS</span>
+            </div>
+            <div class="portal-tag">CANDIDATE PORTAL 🔐</div>
+        </div>
+    </header>
+
+    <!-- Main Card Setup Container -->
+    <main class="setup-wrapper">
+        <div class="setup-card">
+            
+            <div class="card-header">
+                <h2>PLACEMENT READY CHECKPOINT</h2>
+                <p>Configure your track parameters before entering the strict proctored arena.</p>
+            </div>
+
+            <!-- Form Block Fields -->
+            <div class="form-group">
+                <label for="student-roll">GLA University Roll Number</label>
+                <input type="text" id="student-roll" placeholder="e.g., 2315000101" required>
+            </div>
+
+            <div class="form-group">
+                <label for="track-select">Select Target Assessment Blueprint</label>
+                <select id="track-select">
+                    <option value="cocubes">CoCubes Mock SVAR Track (Speech & Verbal)</option>
+                    <option value="tcs">TCS Ninja/Digital Core Round</option>
+                    <option value="capgemini">Capgemini Behavioral Interview</option>
+                    <option value="amcat">AMCAT Employability Assessment</option>
+                </select>
+            </div>
+
+            <!-- Rules Reminder Star Badge Section -->
+            <div class="warning-box">
+                <span class="warning-star">★</span>
+                <p>System Alert: Your browser will force <strong>Fullscreen Mode</strong>. Switching tabs or remaining silent for more than 4 seconds will trigger strict strike compliance penalties.</p>
+            </div>
+
+            <!-- Acknowledgment Hardware Checkboxes -->
+            <div class="checkbox-group">
+                <label class="check-item">
+                    <input type="checkbox" id="check-media" required>
+                    <span>I agree to grant Microphone and Web Camera hardware access permissions.</span>
+                </label>
+                <label class="check-item">
+                    <input type="checkbox" id="check-lock" required>
+                    <span>I authorize the system to lock my browser window focus during evaluation.</span>
+                </label>
+            </div>
+
+            <!-- Action Form Submission Trigger Button -->
+            <button class="btn-launch" onclick="validateAndLaunch()">ENTER PLACEMENT ARENA ➔</button>
+
+        </div>
+    </main>
+
+    <!-- Simple Logical Logic Loop script for navigation routing -->
+    <script>
+        function validateAndLaunch() {
+            // 1. Data nodes ko capture karo
+            const rollNumber = document.getElementById('student-roll').value.trim();
+            const targetTrack = document.getElementById('track-select').value;
+            const mediaChecked = document.getElementById('check-media').checked;
+            const lockChecked = document.getElementById('check-lock').checked;
+
+            // 2. C++ style validation checks logic loop
+            if (rollNumber === "") {
+                alert("❌ Input Error: Please enter your valid GLA Student Roll Number.");
+                return;
+            }
+            if (!mediaChecked || !lockChecked) {
+                alert("❌ Verification Failed: You must accept all system and compliance checks to run the simulation.");
+                return;
+            }
+
+            // 3. The Local Storage Secret Hack
+            // Yeh commands user ke parameters ko browser ki temporary cache memory me lock kar dete hain
+            localStorage.setItem('candidateRoll', rollNumber);
+            localStorage.setItem('selectedTrack', targetTrack);
+
+            alert("🚀 System Validated successfully!\nSaving cache parameters...\n\nInitializing proctoring graphics and opening your live testing arena!");
+            
+            // Redirecting user action chain to the next page layout file
+            window.location.href = 'arena.html';
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Hello Interview"
+description = "A high-fidelity placement interview simulator for college students, turning the supplied Hello Interview welcome and candidate checkpoint designs into a functional five-question MVP with a local performance report."
+version = "1.0.0"
+id = "artifacts/hello-interview"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19616
+
+[services.development]
+run = "pnpm --filter @workspace/hello-interview run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hello-interview", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hello-interview/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19616"
+BASE_PATH = "/"

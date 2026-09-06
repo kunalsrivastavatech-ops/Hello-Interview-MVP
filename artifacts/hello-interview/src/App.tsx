@@ -1,10 +1,10 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, RotateCcw, ShieldCheck, Target, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, Mic, RefreshCw, RotateCcw, ShieldCheck, Target, TriangleAlert, UserRound, Video } from 'lucide-react';
 import {
   Route,
   Switch,
@@ -16,6 +16,7 @@ const queryClient = new QueryClient();
 
 type Candidate = { name: string; roll: string; company: string; track: string };
 type Answer = { text: string; elapsed: number };
+type MediaStatus = 'idle' | 'requesting' | 'active' | 'error';
 
 const questions = [
   { question: 'Walk us through a technical project you are proud to have shipped.', note: 'Keep your answer structured: context, decisions, and measurable outcome.', dimension: 'Technical depth' },
@@ -134,7 +135,54 @@ function Arena() {
   const [answers, setAnswers] = useState<Answer[]>(() => { try { return JSON.parse(localStorage.getItem('hello-interview-answers') || '[]'); } catch { return []; } });
   const [answer, setAnswer] = useState(() => answers[0]?.text || '');
   const [remaining, setRemaining] = useState(90);
+  const [mediaStatus, setMediaStatus] = useState<MediaStatus>('idle');
+  const [mediaError, setMediaError] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopMedia = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const requestMedia = async () => {
+    stopMedia();
+    setMediaError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMediaStatus('error');
+      setMediaError('This browser does not support camera and microphone access. You can continue with written answers.');
+      return;
+    }
+
+    setMediaStatus('requesting');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
+      }
+      setMediaStatus('active');
+    } catch (error) {
+      const name = error instanceof DOMException ? error.name : '';
+      const message = name === 'NotAllowedError' || name === 'SecurityError'
+        ? 'Camera and microphone permission was denied. Allow access in your browser settings or continue with written answers.'
+        : name === 'NotFoundError'
+          ? 'No camera or microphone was found. Connect a device or continue with written answers.'
+          : name === 'NotReadableError'
+            ? 'Your camera or microphone is already in use by another app. Close it and retry, or continue with written answers.'
+            : 'Camera and microphone access could not start. You can retry or continue with written answers.';
+      setMediaError(message);
+      setMediaStatus('error');
+    }
+  };
+
   useEffect(() => { if (!candidate.name) setLocation('/setup'); }, [candidate.name, setLocation]);
+  useEffect(() => {
+    void requestMedia();
+    return stopMedia;
+  }, []);
   useEffect(() => { setRemaining(90); setAnswer(answers[current]?.text || ''); }, [current, answers]);
   useEffect(() => { const interval = window.setInterval(() => setRemaining((value) => value > 0 ? value - 1 : 0), 1000); return () => window.clearInterval(interval); }, [current]);
   useEffect(() => { if (remaining === 0) advance(); }, [remaining]);
@@ -145,7 +193,26 @@ function Arena() {
   const item = questions[current];
   return <div className="app-shell"><Header arena /><main className="arena-page">
     <div className="arena-top"><div className="page-frame arena-top-inner"><div><div className="arena-kicker">Candidate / {candidate.name || 'Session'} / {candidate.company || 'Target company'}</div><h1 className="arena-title">Interview arena</h1></div><div className={`timer ${remaining < 20 ? 'warning' : ''}`} aria-live="polite" data-testid="status-countdown"><Clock3 size={16} /> {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</div></div></div>
-    <div className="arena-content"><div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p><textarea className="answer-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" /><div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answer.trim() ? answer.trim().split(/\s+/).length : 0} words / written locally</span><button className="neo-button" onClick={advance} data-testid="button-submit-next">{current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> This rehearsal uses your written response only. No camera, microphone, AI, or external monitoring is active.</p></div>
+    <div className="arena-content">
+      <div className="media-stage">
+        <div className="media-panel interviewer-panel">
+          <div className="media-panel-head"><span>AI INTERVIEWER</span><span className="media-ready">PREPARING</span></div>
+          <div className="interviewer-visual"><div className="interviewer-avatar"><UserRound size={52} /></div><span className="interviewer-wave">● ● ●</span></div>
+          <p className="media-caption">Your interviewer feed will speak the question aloud in the next step.</p>
+        </div>
+        <div className="media-panel candidate-panel">
+          <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
+          <div className={`camera-viewport ${mediaStatus === 'active' ? 'live' : ''}`}>
+            {mediaStatus === 'active' ? <video ref={videoRef} autoPlay muted playsInline aria-label="Your live camera preview" data-testid="video-candidate-preview" /> : <div className="camera-placeholder"><Video size={30} /><strong>{mediaStatus === 'requesting' ? 'Requesting device access…' : mediaStatus === 'error' ? 'Camera preview unavailable' : 'Camera preview loading'}</strong><span>{mediaError || 'Your preview will appear here.'}</span></div>}
+          </div>
+          <div className="device-status-row">
+            <span className={`device-status ${mediaStatus === 'active' ? 'active' : ''}`}><Video size={14} /> Camera {mediaStatus === 'active' ? 'on' : 'pending'}</span>
+            <span className={`device-status ${mediaStatus === 'active' ? 'active' : ''}`}><Mic size={14} /> Microphone {mediaStatus === 'active' ? 'on' : 'pending'}</span>
+            {mediaStatus !== 'active' && <button className="retry-media" onClick={() => void requestMedia()} disabled={mediaStatus === 'requesting'}><RefreshCw size={13} /> RETRY ACCESS</button>}
+          </div>
+        </div>
+      </div>
+      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p><textarea className="answer-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" /><div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answer.trim() ? answer.trim().split(/\s+/).length : 0} words / written locally</span><button className="neo-button" onClick={advance} data-testid="button-submit-next">{current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
   </main></div>;
 }
 

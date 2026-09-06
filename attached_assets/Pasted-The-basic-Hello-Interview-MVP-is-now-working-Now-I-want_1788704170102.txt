@@ -1,0 +1,422 @@
+The basic Hello Interview MVP is now working.
+
+Now I want to implement the REAL AI INTERVIEWER experience.
+
+IMPORTANT:
+Do not redesign my existing UI.
+Keep the current Hello Interview corporate interview interface.
+
+I want the candidate to feel like they are sitting in a real interview with an AI interviewer.
+
+TARGET EXPERIENCE:
+
+Candidate enters the interview.
+
+The screen should show:
+
+LEFT / MAIN AREA:
+- AI interviewer avatar/video-style interface
+- The AI interviewer asks questions
+- The interviewer speaks the question aloud
+
+RIGHT / CANDIDATE AREA:
+- Candidate's live webcam video
+- Camera remains ON during the interview
+- Microphone remains ON during the interview
+- Candidate answers verbally
+
+The experience should feel like:
+
+AI INTERVIEWER
+"Tell me about yourself."
+
+↓ AI speaks the question aloud
+
+CANDIDATE
+speaks into microphone while camera is running
+
+↓ speech is converted to text
+
+AI evaluates the answer
+
+↓ AI asks the next question
+
+Continue for approximately 5 questions.
+
+TECHNICAL ARCHITECTURE:
+
+Browser:
+- Camera
+- Microphone
+- Interview UI
+- Timer
+- Audio playback
+- Speech-to-text
+
+Server/API:
+- AI model
+- Question generation
+- Answer evaluation
+- Final report generation
+
+Database:
+- Supabase later
+
+Do NOT put API keys in frontend JavaScript.
+
+--------------------------------------------------
+STEP 1 — CAMERA + MICROPHONE
+--------------------------------------------------
+
+Use:
+
+navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+})
+
+Show the candidate's live camera stream in the existing interview UI.
+
+Handle:
+- permission granted
+- permission denied
+- camera unavailable
+- microphone unavailable
+
+The candidate should clearly see that the camera and microphone are active.
+
+Do not record or permanently upload video/audio yet.
+
+--------------------------------------------------
+STEP 2 — SPEECH TO TEXT
+--------------------------------------------------
+
+Implement browser speech recognition where supported.
+
+Use the browser's SpeechRecognition / webkitSpeechRecognition API initially.
+
+The flow should be:
+
+Candidate clicks "Start Answer"
+
+↓
+
+Microphone listens
+
+↓
+
+Candidate speaks
+
+↓
+
+Live transcript appears
+
+↓
+
+Candidate clicks "Submit Answer"
+
+↓
+
+Transcript is sent to the server/API
+
+If SpeechRecognition is unavailable, provide a text fallback so the interview can still work.
+
+Create this as a separate module/function so it can later be replaced with a production speech-to-text service.
+
+--------------------------------------------------
+STEP 3 — AI INTERVIEWER
+--------------------------------------------------
+
+Now connect an actual AI model.
+
+Use the Vercel AI SDK if appropriate.
+
+Create server-side API endpoints/functions for:
+
+POST /api/interview/question
+
+POST /api/interview/evaluate
+
+POST /api/interview/report
+
+The AI interviewer should receive:
+
+candidate name
+company
+job/assessment track
+question number
+previous questions
+previous answers
+interview context
+
+The AI should generate an appropriate interview question.
+
+For example:
+
+Question 1:
+"Tell me about yourself."
+
+Question 2:
+"Can you explain one technical project you have worked on?"
+
+Question 3:
+"Why did you choose that technology?"
+
+Question 4:
+technical question based on the candidate's role
+
+Question 5:
+"Why should we hire you?"
+
+The AI should adapt follow-up questions based on previous answers where possible.
+
+--------------------------------------------------
+STEP 4 — AI SPEAKING
+--------------------------------------------------
+
+This is VERY IMPORTANT.
+
+I don't want the AI interviewer to only display text.
+
+The AI must SPEAK the question aloud.
+
+Implement text-to-speech using a browser-compatible TTS solution initially.
+
+For example:
+
+window.speechSynthesis
+
+The flow should be:
+
+AI generates:
+
+"Tell me about yourself."
+
+↓
+
+Display question on screen
+
+↓
+
+Convert question to speech
+
+↓
+
+AI interviewer speaks aloud
+
+↓
+
+Candidate listens
+
+↓
+
+Candidate answers through microphone
+
+For the first MVP, browser speechSynthesis is acceptable.
+
+Keep the speech layer modular so that we can later replace it with a high-quality AI voice API.
+
+The AI voice should sound professional and interview-like.
+
+Do not make it sound like a robotic notification.
+
+--------------------------------------------------
+STEP 5 — FACE-TO-FACE INTERVIEW FLOW
+--------------------------------------------------
+
+Implement this exact loop:
+
+START INTERVIEW
+
+↓
+
+AI interviewer appears
+
+↓
+
+AI asks question
+
+↓
+
+AI voice speaks question
+
+↓
+
+Candidate camera + microphone active
+
+↓
+
+Candidate answers
+
+↓
+
+Speech-to-text creates transcript
+
+↓
+
+Candidate submits answer
+
+↓
+
+Send transcript + question to AI
+
+↓
+
+AI evaluates answer
+
+↓
+
+Generate next question
+
+↓
+
+AI speaks next question
+
+↓
+
+Repeat
+
+↓
+
+After 5 questions:
+
+FINAL REPORT
+
+--------------------------------------------------
+STEP 6 — ANSWER EVALUATION
+--------------------------------------------------
+
+Create an AI evaluation function.
+
+The AI should evaluate:
+
+1. Technical knowledge
+2. Relevance
+3. Completeness
+4. Communication clarity
+5. Structure
+6. Use of examples
+7. Areas for improvement
+
+Return structured JSON, for example:
+
+{
+  "technicalScore": 78,
+  "communicationScore": 82,
+  "relevanceScore": 80,
+  "clarityScore": 76,
+  "overallScore": 79,
+  "strengths": [],
+  "improvements": [],
+  "feedback": ""
+}
+
+Do not let the AI return random UI text that is difficult to parse.
+
+Use structured output where possible.
+
+--------------------------------------------------
+STEP 7 — INTERVIEWER PERSONALITY
+--------------------------------------------------
+
+The AI interviewer should behave like a professional corporate interviewer.
+
+It should:
+
+- be professional
+- ask concise questions
+- not give answers to the candidate
+- ask follow-up questions when appropriate
+- avoid unnecessary conversation
+- challenge weak answers
+- ask deeper technical questions
+- remain neutral
+- not excessively praise the candidate
+
+Example:
+
+Candidate:
+"I made a website using HTML."
+
+AI interviewer:
+"Okay. What problem did the website solve, and what was your specific contribution?"
+
+This should feel like an actual interview.
+
+--------------------------------------------------
+STEP 8 — SILENCE DETECTION
+--------------------------------------------------
+
+If the candidate has not spoken for approximately 7–10 seconds:
+
+show a subtle UI signal.
+
+Example:
+
+"Take a moment. Start with the main idea."
+
+Do not immediately mark the candidate wrong.
+
+--------------------------------------------------
+STEP 9 — INTERVIEW REPORT
+--------------------------------------------------
+
+After 5 questions, generate a professional report.
+
+Show:
+
+Overall Score
+Technical Knowledge
+Communication
+Clarity
+Answer Quality
+Confidence/Delivery signals
+
+Then:
+
+Strengths
+Weaknesses
+Question-by-question feedback
+Recommended practice topics
+
+The report should be generated from the actual answers.
+
+--------------------------------------------------
+STEP 10 — IMPORTANT LIMITATIONS
+--------------------------------------------------
+
+Do NOT claim that:
+
+- eye movement proves cheating
+- looking away proves cheating
+- camera monitoring guarantees anti-cheating
+- speech speed automatically proves confidence
+
+If we later implement attention/proctoring signals, label them as signals rather than definitive conclusions.
+
+--------------------------------------------------
+IMPLEMENTATION ORDER
+--------------------------------------------------
+
+Do NOT build everything at once.
+
+Implement in this exact order:
+
+1. Camera preview
+2. Microphone access
+3. Speech-to-text
+4. AI question generation
+5. AI question evaluation
+6. Text-to-speech
+7. Connect everything into the interview loop
+8. Final AI report
+
+After each step:
+- test it
+- explain what changed
+- tell me how to test it
+- fix errors before moving to the next step
+
+I am a beginner in JavaScript, so explain the important parts instead of dumping unexplained code.
+
+Start with STEP 1: camera + microphone.

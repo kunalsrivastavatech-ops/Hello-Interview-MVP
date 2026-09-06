@@ -37,6 +37,7 @@ Hello Interview is a local-first placement interview simulator that helps colleg
 - Welcome page with the supplied Hello Interview corporate rehearsal visual language.
 - Candidate checkpoint for name, roll number, company, and assessment track.
 - Five-question interview arena with a 90-second question timer and written answer capture.
+- Camera and microphone preview with permission, unavailable-device, denied-access, retry, and cleanup states; media is not recorded or uploaded.
 - Private final report with overall score, dimension readout, strengths, improvement areas, and next practice topics.
 
 ## User preferences
@@ -47,6 +48,7 @@ Hello Interview is a local-first placement interview simulator that helps colleg
 ## Gotchas
 
 - The app is intentionally not a proctoring system in Phase 1; do not describe local timing or tab signals as cheating detection.
+- The camera/microphone step is intentionally browser-local; speech recognition and AI calls are separate later phases.
 - The artifact build requires `PORT` and `BASE_PATH`, which are supplied by the managed workflow.
 
 ## Pointers

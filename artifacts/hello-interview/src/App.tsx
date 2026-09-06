@@ -18,6 +18,29 @@ type Candidate = { name: string; roll: string; company: string; track: string };
 type Answer = { text: string; elapsed: number };
 type MediaStatus = 'idle' | 'requesting' | 'active' | 'error';
 type InterviewerState = 'ready' | 'speaking' | 'listening' | 'evaluating' | 'next';
+type SpeechRecognitionResultEvent = Event & {
+  resultIndex: number;
+  results: {
+    length: number;
+    [index: number]: {
+      isFinal: boolean;
+      0: { transcript: string };
+    };
+  };
+};
+type SpeechRecognitionErrorEvent = Event & { error?: string };
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+};
+type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
 const questions = [
   { question: 'Walk us through a technical project you are proud to have shipped.', note: 'Keep your answer structured: context, decisions, and measurable outcome.', dimension: 'Technical depth' },
@@ -31,6 +54,21 @@ const initialCandidate: Candidate = { name: '', roll: '', company: 'TCS', track:
 
 function getStoredCandidate(): Candidate {
   try { return JSON.parse(localStorage.getItem('hello-interview-candidate') || 'null') || initialCandidate; } catch { return initialCandidate; }
+}
+
+function getSpeechRecognition(): SpeechRecognitionConstructor | null {
+  if (typeof window === 'undefined') return null;
+  const speechWindow = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition || null;
+}
+
+function appendTranscript(existing: string, addition: string) {
+  const cleanAddition = addition.trim();
+  if (!cleanAddition) return existing;
+  return existing.trim() ? `${existing.trim()} ${cleanAddition}` : cleanAddition;
 }
 
 function Header({ arena = false }: { arena?: boolean }) {
@@ -139,10 +177,16 @@ function Arena() {
   const [mediaStatus, setMediaStatus] = useState<MediaStatus>('idle');
   const [mediaError, setMediaError] = useState('');
   const [interviewerState, setInterviewerState] = useState<InterviewerState>('ready');
+  const [speechSupported] = useState(() => Boolean(getSpeechRecognition()));
+  const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [speechError, setSpeechError] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRequestRef = useRef(0);
   const speechRequestRef = useRef(0);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const speechFinalRef = useRef('');
 
   const stopMedia = () => {
     mediaRequestRef.current += 1;
@@ -223,6 +267,65 @@ function Arena() {
     window.speechSynthesis.speak(utterance);
   };
 
+  const stopRecognition = () => {
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition) recognition.abort();
+    setIsListening(false);
+    setInterimTranscript('');
+  };
+
+  const startRecognition = () => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition || isListening) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = navigator.language || 'en-US';
+    speechFinalRef.current = answer;
+    setSpeechError('');
+    recognition.onresult = (event) => {
+      let finalChunk = '';
+      let interimChunk = '';
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+        if (result.isFinal) finalChunk = appendTranscript(finalChunk, result[0].transcript);
+        else interimChunk = appendTranscript(interimChunk, result[0].transcript);
+      }
+      if (finalChunk) {
+        speechFinalRef.current = appendTranscript(speechFinalRef.current, finalChunk);
+        setAnswer(speechFinalRef.current);
+      }
+      setInterimTranscript(interimChunk);
+    };
+    recognition.onerror = (event) => {
+      if (event.error !== 'aborted') {
+        setSpeechError(event.error === 'not-allowed'
+          ? 'Microphone access was denied. Allow microphone access or type your answer below.'
+          : 'Voice input stopped. You can retry or continue typing your answer.');
+      }
+      setIsListening(false);
+      setInterimTranscript('');
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setInterimTranscript('');
+      if (recognitionRef.current === recognition) recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setSpeechError('Voice input could not start. You can retry or type your answer below.');
+    }
+  };
+
   useEffect(() => { if (!candidate.name) setLocation('/setup'); }, [candidate.name, setLocation]);
   useEffect(() => {
     void requestMedia();
@@ -259,16 +362,24 @@ function Arena() {
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     };
   }, [current]);
-  useEffect(() => { setRemaining(90); setAnswer(answers[current]?.text || ''); }, [current, answers]);
+  useEffect(() => {
+    stopRecognition();
+    speechFinalRef.current = answers[current]?.text || '';
+    setRemaining(90);
+    setAnswer(speechFinalRef.current);
+  }, [current, answers]);
+  useEffect(() => () => stopRecognition(), []);
   useEffect(() => { const interval = window.setInterval(() => setRemaining((value) => value > 0 ? value - 1 : 0), 1000); return () => window.clearInterval(interval); }, [current]);
   useEffect(() => { if (remaining === 0) advance(); }, [remaining]);
   const advance = () => {
     if (interviewerState === 'evaluating' || interviewerState === 'next') return;
+    const answerToSave = isListening ? speechFinalRef.current : answer;
+    stopRecognition();
     setInterviewerState('evaluating');
     speechRequestRef.current += 1;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     const next = [...answers];
-    next[current] = { text: answer, elapsed: 90 - remaining };
+    next[current] = { text: answerToSave, elapsed: 90 - remaining };
     setAnswers(next);
     localStorage.setItem('hello-interview-answers', JSON.stringify(next));
     window.setTimeout(() => {
@@ -281,6 +392,12 @@ function Arena() {
     }, 550);
   };
   const item = questions[current];
+  const answerValue = interimTranscript ? appendTranscript(answer, interimTranscript) : answer;
+  const updateAnswer = (value: string) => {
+    setAnswer(value);
+    speechFinalRef.current = value;
+    setInterimTranscript('');
+  };
   const interviewerLabel: Record<InterviewerState, string> = {
     ready: 'AI READY',
     speaking: 'AI SPEAKING',
@@ -323,7 +440,13 @@ function Arena() {
           </div>
         </div>
       </div>
-      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p><textarea className="answer-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" /><div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answer.trim() ? answer.trim().split(/\s+/).length : 0} words / written locally</span><button className="neo-button" onClick={advance} disabled={interviewerState === 'evaluating' || interviewerState === 'next'} data-testid="button-submit-next">{interviewerState === 'evaluating' ? 'EVALUATING…' : current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
+      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p>
+      <div className={`speech-control ${isListening ? 'listening' : ''}`}>
+        {speechSupported ? <><div className="speech-copy"><Mic size={17} /><div><strong>{isListening ? 'LIVE TRANSCRIPT' : 'ANSWER BY VOICE'}</strong><span>{isListening ? 'Speak naturally. Your answer will appear below.' : 'Use your active microphone, or type instead.'}</span></div></div><button className="speech-button" onClick={isListening ? stopRecognition : startRecognition} aria-pressed={isListening} data-testid="button-start-answer"><Mic size={16} /> {isListening ? 'STOP ANSWER' : 'START ANSWER'}</button></> : <div className="speech-fallback"><TriangleAlert size={18} /><div><strong>Voice answers are not supported in this browser.</strong><span>Type your answer below to continue the interview.</span></div></div>}
+      </div>
+      {speechError && <p className="speech-error" role="alert">{speechError}</p>}
+      <textarea className={`answer-input ${isListening ? 'listening' : ''}`} value={answerValue} onChange={(e) => updateAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" />
+      <div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answerValue.trim() ? answerValue.trim().split(/\s+/).length : 0} words / {isListening ? 'live transcript' : 'written locally'}</span><button className="neo-button" onClick={advance} disabled={interviewerState === 'evaluating' || interviewerState === 'next'} data-testid="button-submit-next">{interviewerState === 'evaluating' ? 'EVALUATING…' : current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
   </main></div>;
 }
 

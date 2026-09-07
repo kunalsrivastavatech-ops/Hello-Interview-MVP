@@ -1,10 +1,11 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { AIInterviewer, type InterviewerState } from '@/components/AIInterviewer';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, Mic, RefreshCw, RotateCcw, ShieldCheck, Target, TriangleAlert, UserRound, Video, Volume2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock3, FileText, Flag, Mic, RefreshCw, RotateCcw, ShieldCheck, Target, TriangleAlert, Video } from 'lucide-react';
 import {
   Route,
   Switch,
@@ -17,7 +18,6 @@ const queryClient = new QueryClient();
 type Candidate = { name: string; roll: string; company: string; track: string };
 type Answer = { text: string; elapsed: number };
 type MediaStatus = 'idle' | 'requesting' | 'active' | 'error';
-type InterviewerState = 'ready' | 'speaking' | 'listening' | 'evaluating' | 'next';
 type SpeechRecognitionResultEvent = Event & {
   resultIndex: number;
   results: {
@@ -252,11 +252,14 @@ function Arena() {
     }
 
     window.speechSynthesis.cancel();
-    setInterviewerState('speaking');
+    setInterviewerState('ready');
     const utterance = new SpeechSynthesisUtterance(question);
     utterance.rate = 0.92;
     utterance.pitch = 0.95;
     utterance.volume = 1;
+    utterance.onstart = () => {
+      if (speechRequestId === speechRequestRef.current) setInterviewerState('speaking');
+    };
     utterance.onend = () => {
       if (speechRequestId === speechRequestRef.current) setInterviewerState('listening');
     };
@@ -398,35 +401,11 @@ function Arena() {
     speechFinalRef.current = value;
     setInterimTranscript('');
   };
-  const interviewerLabel: Record<InterviewerState, string> = {
-    ready: 'AI READY',
-    speaking: 'AI SPEAKING',
-    listening: 'LISTENING TO CANDIDATE',
-    evaluating: 'EVALUATING',
-    next: 'NEXT QUESTION',
-  };
-  const interviewerCaption: Record<InterviewerState, string> = {
-    ready: 'Your interviewer is ready to begin.',
-    speaking: 'Listen closely. The interviewer is asking the question aloud.',
-    listening: 'The room is yours. Take your time and answer clearly.',
-    evaluating: 'Reviewing the answer before moving forward.',
-    next: 'Preparing the next question.',
-  };
   return <div className="app-shell"><Header arena /><main className="arena-page">
     <div className="arena-top"><div className="page-frame arena-top-inner"><div><div className="arena-kicker">Candidate / {candidate.name || 'Session'} / {candidate.company || 'Target company'}</div><h1 className="arena-title">Interview arena</h1></div><div className={`timer ${remaining < 20 ? 'warning' : ''}`} aria-live="polite" data-testid="status-countdown"><Clock3 size={16} /> {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</div></div></div>
     <div className="arena-content">
       <div className="media-stage">
-        <div className="media-panel interviewer-panel">
-          <div className="media-panel-head"><span>AI INTERVIEWER</span><span className={`media-ready interviewer-state-pill ${interviewerState === 'speaking' ? 'speaking' : interviewerState === 'listening' ? 'listening' : interviewerState === 'evaluating' ? 'evaluating' : ''}`} aria-live="polite">{interviewerLabel[interviewerState]}</span></div>
-          <div className={`interviewer-visual ${interviewerState === 'speaking' ? 'speaking' : ''} ${interviewerState === 'listening' ? 'listening' : ''}`}>
-            <div className="interviewer-avatar"><UserRound size={52} /></div>
-            <div className="interviewer-orbit orbit-one" /><div className="interviewer-orbit orbit-two" />
-            <span className="interviewer-wave" aria-hidden="true">● ● ●</span>
-          </div>
-          <div className="interviewer-state-row"><span className={`state-dot ${interviewerState}`} /> <strong>{interviewerLabel[interviewerState]}</strong><button className="replay-question" onClick={() => speakQuestion(item.question)} disabled={interviewerState === 'evaluating' || interviewerState === 'next'}><Volume2 size={14} /> REPLAY</button></div>
-          <p className="media-caption" aria-live="polite">{interviewerCaption[interviewerState]}</p>
-          <div className="interviewer-flow" aria-label="Interview state flow">{(['ready', 'speaking', 'listening', 'evaluating', 'next'] as InterviewerState[]).map((state) => <span key={state} className={interviewerState === state ? 'current' : ''}>{interviewerLabel[state]}</span>)}</div>
-        </div>
+        <AIInterviewer state={interviewerState} question={item.question} onReplay={() => speakQuestion(item.question)} replayDisabled={interviewerState === 'evaluating' || interviewerState === 'next'} />
         <div className="media-panel candidate-panel">
           <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
           <div className={`camera-viewport ${mediaStatus === 'active' ? 'live' : ''}`}>

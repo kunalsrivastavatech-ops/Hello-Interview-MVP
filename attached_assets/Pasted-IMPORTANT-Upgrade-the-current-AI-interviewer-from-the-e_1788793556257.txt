@@ -1,0 +1,200 @@
+IMPORTANT: Upgrade the current AI interviewer from the existing emoji/icon + audio implementation into a REAL VISIBLE AI INTERVIEWER CHARACTER.
+
+Do NOT remove or redesign the existing Hello Interview UI. Preserve the current corporate/proctored interview design, colors, layout, camera panel, timer, health bar, controls, and typography.
+
+CURRENT PROBLEM:
+The AI interviewer currently only displays an emoji/icon while audio plays the question. I need an actual visible AI interviewer character/person on the interview screen.
+
+GOAL:
+When the AI asks a question, the candidate must SEE a professional AI interviewer character on screen and HEAR the same character speaking.
+
+IMPLEMENTATION:
+
+1. CREATE A PROFESSIONAL AI INTERVIEWER CHARACTER
+- Replace the emoji with a realistic/professional human-like AI interviewer avatar.
+- The character should look like a corporate interviewer, not a cartoon, emoji, gaming character, or mascot.
+- Upper-body/head-and-shoulders presentation is preferred.
+- Neutral professional clothing.
+- Clean corporate appearance.
+- Suitable for a placement interview with companies such as Capgemini, TCS, Infosys, Accenture, etc.
+- Use an image/asset or generated visual that can actually be rendered in the browser.
+- Do NOT use an emoji as the primary interviewer.
+
+2. INTERVIEWER STATES
+The interviewer needs visible states:
+
+A. IDLE / READY
+- Character visible.
+- Subtle natural idle animation if possible.
+
+B. AI SPEAKING
+- Character visibly appears to be speaking.
+- Animate the mouth/face while speech audio is playing.
+- Add a subtle speaking indicator such as "AI INTERVIEWER" and a small audio waveform/equalizer.
+- The animation must start when TTS starts and stop when TTS finishes.
+
+C. LISTENING
+- Character remains visible.
+- Speaking animation stops.
+- Display a subtle "Listening..." state.
+- Candidate's microphone remains active.
+
+D. THINKING / EVALUATING
+- Character remains visible.
+- Show a subtle thinking/evaluating animation.
+- Then generate/display the next question.
+
+3. REAL VOICE CONNECTION
+The character and audio MUST be synchronized.
+
+Current flow should become:
+
+AI generates question
+        ↓
+Question appears in UI
+        ↓
+AI interviewer character changes to SPEAKING
+        ↓
+TTS speaks the question
+        ↓
+Mouth/speaking animation runs while TTS is playing
+        ↓
+TTS finishes
+        ↓
+Character changes to LISTENING
+        ↓
+Candidate answers through microphone
+        ↓
+AI evaluates answer
+        ↓
+Character changes to THINKING
+        ↓
+Next question
+
+4. DO NOT FAKE THE CORE FUNCTIONALITY
+Do not just play an audio file while showing a static emoji.
+
+The visible character must be integrated into the actual interview state machine.
+
+If true AI lip-sync is not currently possible with the existing stack, implement a convincing MVP speaking animation:
+- mouth open/close animation
+- subtle head movement
+- speaking glow/waveform
+- animation synchronized to the TTS start/end events
+
+Structure the code so a true lip-sync/avatar API can be integrated later.
+
+5. AI AVATAR ARCHITECTURE
+Create a reusable component such as:
+
+AIInterviewer
+
+with states:
+
+'idle'
+'speaking'
+'listening'
+'thinking'
+
+Example:
+
+<AIInterviewer
+  state={interviewerState}
+  isSpeaking={isSpeaking}
+/>
+
+Do NOT scatter avatar logic throughout unrelated files.
+
+6. TTS INTEGRATION
+Use the existing TTS implementation if one already exists.
+
+If the browser SpeechSynthesis API is currently being used:
+- connect SpeechSynthesisUtterance events to interviewer state
+- on start → state = "speaking"
+- during speech → speaking animation
+- on end → state = "listening"
+
+If a server-side TTS/API already exists:
+- connect its start/end events to the same state system.
+
+Do NOT expose private API keys in frontend code.
+
+7. VISUAL DESIGN
+The interviewer should appear inside the existing AI interviewer area.
+
+Example layout:
+
+┌─────────────────────────────────────────┐
+│             AI INTERVIEWER              │
+│                                         │
+│              [ HUMAN-LIKE              │
+│               AI AVATAR ]               │
+│                                         │
+│       ● AI INTERVIEWER  🔊 Speaking     │
+│                                         │
+│  "Tell me about yourself and your      │
+│   experience with programming."         │
+└─────────────────────────────────────────┘
+
+Make it look like a premium corporate interview platform.
+
+Do NOT make it look like:
+- a chatbot
+- a game
+- an emoji interface
+- a cartoon
+- a generic profile picture sitting beside text
+
+8. AVATAR ASSET
+If the project needs an image asset, create/use a proper AI interviewer portrait asset.
+
+The asset must:
+- have a transparent or clean background where appropriate
+- fit naturally inside the existing interviewer container
+- be responsive
+- not contain watermarks
+- not show a laptop or physical room background
+- look like part of the Hello Interview product
+
+9. MOBILE + DESKTOP
+The interviewer must work correctly on:
+- desktop
+- laptop
+- mobile preview
+
+Do not allow the avatar to disappear because of fixed width/height CSS.
+
+10. DEBUGGING
+After implementation, test the complete flow.
+
+Required test:
+
+1. Open interview.
+2. AI interviewer is immediately visible.
+3. Start interview.
+4. AI generates a question.
+5. AI avatar enters SPEAKING state.
+6. Audio plays.
+7. Speaking animation runs.
+8. Audio ends.
+9. Avatar enters LISTENING state.
+10. Candidate speaks.
+11. Candidate answer is captured.
+12. AI evaluates it.
+13. Avatar enters THINKING state.
+14. Next question appears.
+15. Avatar speaks again.
+16. Final report is generated.
+
+IMPORTANT:
+If the current AI interviewer implementation is based on an emoji, DO NOT keep the emoji as the main visual.
+
+I want the final result to feel like:
+
+"An actual AI interviewer is sitting in front of me conducting my placement interview."
+
+NOT:
+
+"An emoji is reading questions through text-to-speech."
+
+Before finishing, inspect the existing project structure and reuse the current interview engine, TTS, styling, and state management wherever possible. Do not unnecessarily rewrite working parts of the application.

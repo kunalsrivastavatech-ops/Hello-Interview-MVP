@@ -2,12 +2,17 @@ import { BrainCircuit, Volume2 } from 'lucide-react';
 import portraitUrl from '@assets/generated_images/ai-interviewer-portrait.png';
 
 export type InterviewerState = 'ready' | 'speaking' | 'listening' | 'evaluating' | 'next';
+export type InterviewerSpeechSignal = {
+  type: 'idle' | 'start' | 'boundary' | 'end';
+  sequence: number;
+};
 
 type AIInterviewerProps = {
   state: InterviewerState;
   question: string;
   onReplay: () => void;
   replayDisabled?: boolean;
+  speechSignal?: InterviewerSpeechSignal;
 };
 
 const stateMeta: Record<InterviewerState, { label: string; caption: string }> = {
@@ -20,9 +25,15 @@ const stateMeta: Record<InterviewerState, { label: string; caption: string }> = 
 
 const flowStates: InterviewerState[] = ['ready', 'speaking', 'listening', 'evaluating', 'next'];
 
-export function AIInterviewer({ state, question, onReplay, replayDisabled = false }: AIInterviewerProps) {
+/**
+ * The portrait is deliberately a replaceable fallback. A real talking-avatar
+ * provider can consume the same state and speech signals without changing the
+ * interview engine or the surrounding Hello Interview UI.
+ */
+export function AIInterviewer({ state, question, onReplay, replayDisabled = false, speechSignal = { type: 'idle', sequence: 0 } }: AIInterviewerProps) {
   const meta = stateMeta[state];
   const isSpeaking = state === 'speaking';
+  const waveformPattern = [7, 13, 20, 15, 9];
 
   return (
     <section className="media-panel interviewer-panel" aria-label="AI interviewer">
@@ -31,18 +42,17 @@ export function AIInterviewer({ state, question, onReplay, replayDisabled = fals
         <span className={`media-ready interviewer-state-pill ${state}`} aria-live="polite">{meta.label}</span>
       </div>
 
-      <div className={`interviewer-visual interviewer-state-${state} ${isSpeaking ? 'speaking' : ''}`} role="img" aria-label={`Professional AI interviewer, ${meta.label.toLowerCase()}`}>
+      <div className={`interviewer-visual interviewer-state-${state} ${isSpeaking ? 'speaking' : ''}`} data-avatar-mode="portrait-fallback" role="img" aria-label={`Professional AI interviewer, ${meta.label.toLowerCase()}`}>
         <div className="interviewer-grid" />
         <div className="interviewer-orbit orbit-one" />
         <div className="interviewer-orbit orbit-two" />
         <div className="interviewer-portrait-frame">
           <img className="interviewer-portrait" src={portraitUrl} alt="Professional AI interviewer" />
-          <div className="interviewer-mouth" aria-hidden="true" />
         </div>
-        <div className="interviewer-signal" aria-hidden="true">
-          <span /><span /><span /><span /><span />
+        <div className={`interviewer-signal ${speechSignal.type}`} aria-hidden="true" key={speechSignal.sequence}>
+          {waveformPattern.map((height, index) => <span key={index} style={{ height: `${isSpeaking && speechSignal.type === 'boundary' ? waveformPattern[(speechSignal.sequence + index) % waveformPattern.length] : height}px` }} />)}
         </div>
-        <div className="interviewer-presence"><BrainCircuit size={14} /> SYNTHETIC INTERVIEW PRESENCE</div>
+        <div className="interviewer-presence"><BrainCircuit size={14} /> CORPORATE INTERVIEWER / VOICE LINKED</div>
       </div>
 
       <div className="interviewer-state-row">

@@ -1,0 +1,88 @@
+ADDITIONAL REQUIREMENT — MAKE THE AI INTERVIEWER FEEL LIKE A REAL HUMAN
+
+The female AI interviewer must not feel like a static photograph or a simple talking avatar.
+
+I want her to behave like a REALISTIC FICTIONAL HUMAN INTERVIEWER who is conducting the interview naturally.
+
+While she is speaking:
+- Her lips must synchronize with the actual voice.
+- She should naturally blink her eyes.
+- Her facial expressions should subtly change according to her speech.
+- She should make small, natural head movements.
+- She should have realistic micro-expressions.
+- Where appropriate, she should make subtle hand gestures while asking or explaining a question.
+- Her shoulders/body should have very subtle natural movement.
+- Avoid exaggerated animation.
+- Movements should be professional and realistic, like an actual corporate interviewer.
+
+Example:
+
+When asking:
+"Could you walk us through a technical project you are proud of?"
+
+She should:
+- Look toward the candidate.
+- Blink naturally.
+- Move her lips according to the actual words.
+- Make a subtle hand gesture while asking the question.
+- Have natural facial movement.
+- Slightly move her head/body.
+- Stop speaking naturally when the audio ends.
+
+When listening:
+- Stop mouth movement.
+- Maintain eye contact toward the candidate.
+- Blink naturally.
+- Have subtle breathing/head movement.
+- Look attentive and engaged.
+- Do NOT continue speaking animation.
+
+When thinking/evaluating:
+- Slight natural change in expression.
+- Small head movement.
+- Natural blinking.
+- No exaggerated cartoon-like animation.
+
+IMPORTANT:
+The goal is NOT to make a cartoon character.
+
+The goal is:
+
+"A realistic fictional AI-generated female interviewer who behaves like a real human interviewer."
+
+She should look and behave naturally enough that the candidate feels like they are actually sitting across from an interviewer.
+
+Prioritize realism:
+1. Accurate lip synchronization with speech
+2. Natural eye blinking
+3. Natural facial expressions
+4. Subtle head movement
+5. Natural hand gestures
+6. Subtle body/shoulder movement
+7. Professional interviewer behavior
+
+Avoid:
+- robotic movement
+- repetitive blinking
+- constant mouth opening/closing
+- exaggerated hand movements
+- cartoon animation
+- emoji-style animation
+- unnatural head shaking
+- looping movements that obviously repeat
+
+If the current technology cannot produce all of these movements from the existing photograph, do NOT fake realism with simple CSS animations. Instead, structure the interviewer component so a proper realistic talking-avatar/lip-sync system can be integrated later.
+
+The final experience should feel like:
+
+REAL AI INTERVIEWER
+→ REALISTIC FACE
+→ REAL SPEECH
+→ REAL LIP SYNC
+→ NATURAL BLINKING
+→ NATURAL EXPRESSIONS
+→ SUBTLE HAND GESTURES
+→ NATURAL HEAD/BODY MOVEMENT
+→ LISTENS TO THE CANDIDATE
+
+The candidate should feel that an actual virtual interviewer is conducting the interview, not that a photograph is playing audio.

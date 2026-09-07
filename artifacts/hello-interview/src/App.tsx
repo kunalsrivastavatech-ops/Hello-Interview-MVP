@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { AIInterviewer, type InterviewerState } from '@/components/AIInterviewer';
+import { AIInterviewer, type InterviewerSpeechSignal, type InterviewerState } from '@/components/AIInterviewer';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -177,6 +177,7 @@ function Arena() {
   const [mediaStatus, setMediaStatus] = useState<MediaStatus>('idle');
   const [mediaError, setMediaError] = useState('');
   const [interviewerState, setInterviewerState] = useState<InterviewerState>('ready');
+  const [speechSignal, setSpeechSignal] = useState<InterviewerSpeechSignal>({ type: 'idle', sequence: 0 });
   const [speechSupported] = useState(() => Boolean(getSpeechRecognition()));
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -252,6 +253,7 @@ function Arena() {
     }
 
     window.speechSynthesis.cancel();
+    setSpeechSignal({ type: 'start', sequence: speechRequestId });
     setInterviewerState('ready');
     const utterance = new SpeechSynthesisUtterance(question);
     utterance.rate = 0.92;
@@ -260,12 +262,21 @@ function Arena() {
     utterance.onstart = () => {
       if (speechRequestId === speechRequestRef.current) setInterviewerState('speaking');
     };
+    utterance.onboundary = () => {
+      if (speechRequestId !== speechRequestRef.current) return;
+      setSpeechSignal((signal) => ({ type: 'boundary', sequence: signal.sequence + 1 }));
+    };
     utterance.onend = () => {
-      if (speechRequestId === speechRequestRef.current) setInterviewerState('listening');
+      if (speechRequestId === speechRequestRef.current) {
+        setSpeechSignal((signal) => ({ type: 'end', sequence: signal.sequence + 1 }));
+        setInterviewerState('listening');
+      }
     };
     utterance.onerror = () => {
-      if (speechRequestId !== speechRequestRef.current) return;
-      setInterviewerState('listening');
+      if (speechRequestId === speechRequestRef.current) {
+        setSpeechSignal((signal) => ({ type: 'end', sequence: signal.sequence + 1 }));
+        setInterviewerState('listening');
+      }
     };
     window.speechSynthesis.speak(utterance);
   };
@@ -379,6 +390,7 @@ function Arena() {
     const answerToSave = isListening ? speechFinalRef.current : answer;
     stopRecognition();
     setInterviewerState('evaluating');
+    setSpeechSignal((signal) => ({ type: 'end', sequence: signal.sequence + 1 }));
     speechRequestRef.current += 1;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     const next = [...answers];
@@ -405,7 +417,7 @@ function Arena() {
     <div className="arena-top"><div className="page-frame arena-top-inner"><div><div className="arena-kicker">Candidate / {candidate.name || 'Session'} / {candidate.company || 'Target company'}</div><h1 className="arena-title">Interview arena</h1></div><div className={`timer ${remaining < 20 ? 'warning' : ''}`} aria-live="polite" data-testid="status-countdown"><Clock3 size={16} /> {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</div></div></div>
     <div className="arena-content">
       <div className="media-stage">
-        <AIInterviewer state={interviewerState} question={item.question} onReplay={() => speakQuestion(item.question)} replayDisabled={interviewerState === 'evaluating' || interviewerState === 'next'} />
+        <AIInterviewer state={interviewerState} question={item.question} onReplay={() => speakQuestion(item.question)} replayDisabled={interviewerState === 'evaluating' || interviewerState === 'next'} speechSignal={speechSignal} />
         <div className="media-panel candidate-panel">
           <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
           <div className={`camera-viewport ${mediaStatus === 'active' ? 'live' : ''}`}>

@@ -2,6 +2,7 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { AIInterviewer, type InterviewerSpeechSignal, type InterviewerState } from '@/components/AIInterviewer';
+import { chooseInterviewer, getQuestionsForCandidate, selectFemaleVoice, type InterviewerConfig } from '@/interviewers';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -42,14 +43,6 @@ type SpeechRecognitionInstance = {
 };
 type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
 
-const questions = [
-  { question: 'Walk us through a technical project you are proud to have shipped.', note: 'Keep your answer structured: context, decisions, and measurable outcome.', dimension: 'Technical depth' },
-  { question: 'When a production bug appears, how do you isolate the root cause?', note: 'We are looking for a calm, repeatable debugging method.', dimension: 'Problem solving' },
-  { question: 'Explain a complex computer science concept to a non-technical stakeholder.', note: 'Clarity beats jargon. Use a simple analogy, then verify understanding.', dimension: 'Communication' },
-  { question: 'Tell us about a time a team disagreed with your approach.', note: 'Show how you listen, decide, and keep the work moving.', dimension: 'Collaboration' },
-  { question: 'Why are you ready for this role at your target company?', note: 'Connect your preparation to the company and the role in specific terms.', dimension: 'Role readiness' },
-];
-
 const initialCandidate: Candidate = { name: '', roll: '', company: 'TCS', track: 'Core engineering' };
 
 function getStoredCandidate(): Candidate {
@@ -63,6 +56,23 @@ function getSpeechRecognition(): SpeechRecognitionConstructor | null {
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   };
   return speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition || null;
+}
+
+function getSpeechVoicesWhenReady(): Promise<SpeechSynthesisVoice[]> {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return Promise.resolve([]);
+  const existingVoices = window.speechSynthesis.getVoices();
+  if (existingVoices.length) return Promise.resolve(existingVoices);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.speechSynthesis.removeEventListener('voiceschanged', finish);
+      resolve(window.speechSynthesis.getVoices());
+    };
+    window.speechSynthesis.addEventListener('voiceschanged', finish, { once: true });
+    window.setTimeout(finish, 1200);
+  });
 }
 
 function appendTranscript(existing: string, addition: string) {
@@ -145,6 +155,7 @@ function Setup() {
     if (!confirmed) { setError('Acknowledge the local session protocol before entering the arena.'); return; }
     localStorage.setItem('hello-interview-candidate', JSON.stringify(candidate));
     localStorage.removeItem('hello-interview-answers');
+    localStorage.removeItem('hello-interview-session-interviewer');
     setLocation('/arena');
   };
   return <div className="app-shell"><Header /><main className="subpage page-frame">
@@ -159,6 +170,7 @@ function Setup() {
         </div>
         <div className="setup-warning"><div className="warning-mark"><TriangleAlert size={16} /></div><p><strong>Session note:</strong> This is a focused local rehearsal. Timing and tab changes may be visible to you as session signals, but they are not proof of misconduct and are not sent anywhere.</p></div>
         <label className="checkline"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} data-testid="checkbox-session-protocol" /><span>I understand this is a timed practice session and I am ready to answer without external assistance.</span></label>
+        <p className="simulated-disclaimer">Simulated interview experience — not an official company interview.</p>
         {error && <p className="error-copy" role="alert" data-testid="text-setup-error">{error}</p>}
         <button className="neo-button" type="submit" style={{ width: '100%' }} data-testid="button-enter-arena">ENTER PLACEMENT ARENA <ArrowRight size={18} /></button>
       </form>
@@ -171,6 +183,8 @@ function Arena() {
   const [, setLocation] = useLocation();
   const candidate = useMemo(getStoredCandidate, []);
   const [current, setCurrent] = useState(0);
+  const sessionQuestions = useMemo(() => getQuestionsForCandidate(candidate.company, candidate.track), [candidate.company, candidate.track]);
+  const interviewer = useMemo<InterviewerConfig>(() => chooseInterviewer(candidate.company), [candidate.company]);
   const [answers, setAnswers] = useState<Answer[]>(() => { try { return JSON.parse(localStorage.getItem('hello-interview-answers') || '[]'); } catch { return []; } });
   const [answer, setAnswer] = useState(() => answers[0]?.text || '');
   const [remaining, setRemaining] = useState(90);
@@ -178,6 +192,8 @@ function Arena() {
   const [mediaError, setMediaError] = useState('');
   const [interviewerState, setInterviewerState] = useState<InterviewerState>('ready');
   const [speechSignal, setSpeechSignal] = useState<InterviewerSpeechSignal>({ type: 'idle', sequence: 0 });
+  const [voiceLabel, setVoiceLabel] = useState('');
+  const [voiceError, setVoiceError] = useState('');
   const [speechSupported] = useState(() => Boolean(getSpeechRecognition()));
   const [isListening, setIsListening] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -243,21 +259,38 @@ function Arena() {
     }
   };
 
-  const speakQuestion = (question: string) => {
+  const speakQuestion = async (question: string) => {
     speechRequestRef.current += 1;
     const speechRequestId = speechRequestRef.current;
 
     if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setVoiceLabel('');
+      setVoiceError('Speech synthesis is unavailable in this browser. Audio was not started.');
+      setSpeechSignal({ type: 'end', sequence: speechRequestId });
       setInterviewerState('listening');
       return;
     }
 
     window.speechSynthesis.cancel();
-    setSpeechSignal({ type: 'start', sequence: speechRequestId });
     setInterviewerState('ready');
+    setVoiceError('');
+    const voices = await getSpeechVoicesWhenReady();
+    if (speechRequestId !== speechRequestRef.current) return;
+    const selectedVoice = selectFemaleVoice(voices, interviewer.voice);
+    if (!selectedVoice) {
+      setVoiceLabel('');
+      setVoiceError('No verified female English voice is available in this browser. Audio was not started to avoid using a default male voice.');
+      setSpeechSignal({ type: 'end', sequence: speechRequestId });
+      setInterviewerState('listening');
+      return;
+    }
+
+    setVoiceLabel(`${selectedVoice.name} · ${selectedVoice.lang}`);
+    setSpeechSignal({ type: 'start', sequence: speechRequestId });
     const utterance = new SpeechSynthesisUtterance(question);
-    utterance.rate = 0.92;
-    utterance.pitch = 0.95;
+    utterance.voice = selectedVoice;
+    utterance.rate = interviewer.voice.rate;
+    utterance.pitch = interviewer.voice.pitch;
     utterance.volume = 1;
     utterance.onstart = () => {
       if (speechRequestId === speechRequestRef.current) setInterviewerState('speaking');
@@ -369,13 +402,13 @@ function Arena() {
       });
   }, [mediaStatus]);
   useEffect(() => {
-    const timer = window.setTimeout(() => speakQuestion(questions[current].question), 450);
+    const timer = window.setTimeout(() => void speakQuestion(sessionQuestions[current].question), 450);
     return () => {
       window.clearTimeout(timer);
       speechRequestRef.current += 1;
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     };
-  }, [current]);
+  }, [current, sessionQuestions]);
   useEffect(() => {
     stopRecognition();
     speechFinalRef.current = answers[current]?.text || '';
@@ -398,7 +431,7 @@ function Arena() {
     setAnswers(next);
     localStorage.setItem('hello-interview-answers', JSON.stringify(next));
     window.setTimeout(() => {
-      if (current === questions.length - 1) {
+      if (current === sessionQuestions.length - 1) {
         setLocation('/report');
         return;
       }
@@ -406,7 +439,7 @@ function Arena() {
       window.setTimeout(() => setCurrent((value) => value + 1), 350);
     }, 550);
   };
-  const item = questions[current];
+  const item = sessionQuestions[current];
   const answerValue = interimTranscript ? appendTranscript(answer, interimTranscript) : answer;
   const updateAnswer = (value: string) => {
     setAnswer(value);
@@ -417,7 +450,7 @@ function Arena() {
     <div className="arena-top"><div className="page-frame arena-top-inner"><div><div className="arena-kicker">Candidate / {candidate.name || 'Session'} / {candidate.company || 'Target company'}</div><h1 className="arena-title">Interview arena</h1></div><div className={`timer ${remaining < 20 ? 'warning' : ''}`} aria-live="polite" data-testid="status-countdown"><Clock3 size={16} /> {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}</div></div></div>
     <div className="arena-content">
       <div className="media-stage">
-        <AIInterviewer state={interviewerState} question={item.question} onReplay={() => speakQuestion(item.question)} replayDisabled={interviewerState === 'evaluating' || interviewerState === 'next'} speechSignal={speechSignal} />
+        <AIInterviewer interviewer={interviewer} state={interviewerState} question={item.question} onReplay={() => void speakQuestion(item.question)} replayDisabled={interviewerState === 'evaluating' || interviewerState === 'next'} speechSignal={speechSignal} voiceLabel={voiceLabel} voiceError={voiceError} />
         <div className="media-panel candidate-panel">
           <div className="media-panel-head"><span>CANDIDATE FEED</span><span className={`media-ready ${mediaStatus === 'active' ? 'active' : ''}`}>{mediaStatus === 'active' ? 'LIVE' : mediaStatus === 'requesting' ? 'REQUESTING' : 'LOCAL'}</span></div>
           <div className={`camera-viewport ${mediaStatus === 'active' ? 'live' : ''}`}>
@@ -431,13 +464,13 @@ function Arena() {
           </div>
         </div>
       </div>
-      <div className="question-progress" aria-label={`Question ${current + 1} of ${questions.length}`}>{questions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / 05 — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p>
+      <div className="question-progress" aria-label={`Question ${current + 1} of ${sessionQuestions.length}`}>{sessionQuestions.map((_, index) => <span key={index} className={`progress-block ${index < current ? 'done' : ''} ${index === current ? 'current' : ''}`} data-testid={`progress-question-${index + 1}`} />)}</div><div className="question-count">Question {String(current + 1).padStart(2, '0')} / {String(sessionQuestions.length).padStart(2, '0')} — {item.dimension}</div><h2 className="question" data-testid="text-current-question">{item.question}</h2><p className="question-note">{item.note}</p>
       <div className={`speech-control ${isListening ? 'listening' : ''}`}>
         {speechSupported ? <><div className="speech-copy"><Mic size={17} /><div><strong>{isListening ? 'LIVE TRANSCRIPT' : 'ANSWER BY VOICE'}</strong><span>{isListening ? 'Speak naturally. Your answer will appear below.' : 'Use your active microphone, or type instead.'}</span></div></div><button className="speech-button" onClick={isListening ? stopRecognition : startRecognition} aria-pressed={isListening} data-testid="button-start-answer"><Mic size={16} /> {isListening ? 'STOP ANSWER' : 'START ANSWER'}</button></> : <div className="speech-fallback"><TriangleAlert size={18} /><div><strong>Voice answers are not supported in this browser.</strong><span>Type your answer below to continue the interview.</span></div></div>}
       </div>
       {speechError && <p className="speech-error" role="alert">{speechError}</p>}
       <textarea className={`answer-input ${isListening ? 'listening' : ''}`} value={answerValue} onChange={(e) => updateAnswer(e.target.value)} placeholder="Type your answer as if you are speaking to the interviewer..." aria-label="Your interview answer" data-testid="textarea-interview-answer" />
-      <div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answerValue.trim() ? answerValue.trim().split(/\s+/).length : 0} words / {isListening ? 'live transcript' : 'written locally'}</span><button className="neo-button" onClick={advance} disabled={interviewerState === 'evaluating' || interviewerState === 'next'} data-testid="button-submit-next">{interviewerState === 'evaluating' ? 'EVALUATING…' : current === questions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
+      <div className="answer-footer"><span className="word-count" data-testid="text-word-count">{answerValue.trim() ? answerValue.trim().split(/\s+/).length : 0} words / {isListening ? 'live transcript' : 'written locally'}</span><button className="neo-button" onClick={advance} disabled={interviewerState === 'evaluating' || interviewerState === 'next'} data-testid="button-submit-next">{interviewerState === 'evaluating' ? 'EVALUATING…' : current === sessionQuestions.length - 1 ? 'FINISH & VIEW REPORT' : 'SUBMIT & NEXT'} <ArrowRight size={18} /></button></div><p className="arena-note"><ShieldCheck size={14} /> Camera and microphone are used for a live local preview only. Nothing is recorded or uploaded in this step.</p></div>
   </main></div>;
 }
 
@@ -450,12 +483,13 @@ function scoreAnswer(answer: Answer | undefined, index: number) {
 function Report() {
   const [, setLocation] = useLocation();
   const candidate = useMemo(getStoredCandidate, []);
+  const sessionQuestions = useMemo(() => getQuestionsForCandidate(candidate.company, candidate.track), [candidate.company, candidate.track]);
   const answers: Answer[] = useMemo(() => { try { return JSON.parse(localStorage.getItem('hello-interview-answers') || '[]'); } catch { return []; } }, []);
-  const scores = questions.map((_, index) => scoreAnswer(answers[index], index));
+  const scores = sessionQuestions.map((_, index) => scoreAnswer(answers[index], index));
   const overall = Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
   const dimensions = [{ label: 'Technical depth', score: Math.round((scores[0] + scores[1]) / 2) }, { label: 'Communication', score: scores[2] }, { label: 'Collaboration', score: scores[3] }, { label: 'Role readiness', score: scores[4] }];
-  const restart = () => { localStorage.removeItem('hello-interview-answers'); setLocation('/setup'); };
-  return <div className="app-shell"><Header /><main><section className="report-hero"><div className="page-frame report-hero-grid"><div><div className="eyebrow" style={{ color: '#7af1e4' }}>Private debrief / session complete</div><h1 className="report-title">{candidate.name || 'Candidate'}, your room is getting clearer.</h1><p className="report-copy">This is a practice signal, not a hiring verdict. Use the patterns below to decide what you rehearse next for {candidate.company || 'your target company'}.</p></div><div className="score-box" data-testid="card-overall-score"><div className="score-label">Overall rehearsal score</div><div className="score-value">{overall}<span style={{ fontSize: 29 }}>/100</span></div></div></div></section><section className="report-body page-frame"><div className="report-grid"><div className="report-card"><h2>Dimension readout</h2>{dimensions.map((dimension) => <div className="dimension" key={dimension.label} data-testid={`dimension-${dimension.label.toLowerCase().replaceAll(' ', '-')}`}><div className="dimension-head"><span>{dimension.label}</span><span className="dimension-score">{dimension.score}/100</span></div><div className="bar"><div className="bar-fill" style={{ width: `${dimension.score}%` }} /></div></div>)}<div className="report-card" style={{ marginTop: 28, boxShadow: 'none', background: '#f5f0e4' }}><h2>Question-by-question feedback</h2><div className="feedback-list">{questions.map((question, index) => <div className="feedback-item" key={question.question}><p className="feedback-q">0{index + 1} / {question.dimension}</p><p className="feedback-a">{answers[index]?.text ? (answers[index].text.length > 145 ? `${answers[index].text.slice(0, 145)}...` : answers[index].text) : 'No written response captured. Use this prompt again with a clear opening, example, and result.'}</p><span className="feedback-tag">{scores[index] >= 70 ? 'Solid base' : 'Rehearse again'}</span></div>)}</div></div></div><div className="report-side"><div className="insight strength"><h3><Check size={20} /> Strengths</h3><ul><li>You showed up and completed the full timed room.</li><li>Your strongest signal is structured written thinking.</li></ul></div><div className="insight improve"><h3><Flag size={20} /> Improve next</h3><ul><li>Add specific metrics and outcomes to project stories.</li><li>Use a repeatable framework before diving into detail.</li></ul></div><div className="insight next"><h3><RotateCcw size={20} /> Next practice areas</h3><ul><li>STAR story: disagreement and resolution</li><li>Debugging aloud under a 90-second limit</li><li>Company-specific “why us” research</li></ul></div></div></div><div className="report-actions"><button className="neo-button" onClick={restart} data-testid="button-practice-again">PRACTICE AGAIN <RotateCcw size={17} /></button><button className="neo-button outline" onClick={() => setLocation('/')} data-testid="button-return-home"><ArrowLeft size={17} /> RETURN HOME</button></div></section></main></div>;
+  const restart = () => { localStorage.removeItem('hello-interview-answers'); localStorage.removeItem('hello-interview-session-interviewer'); setLocation('/setup'); };
+  return <div className="app-shell"><Header /><main><section className="report-hero"><div className="page-frame report-hero-grid"><div><div className="eyebrow" style={{ color: '#7af1e4' }}>Private debrief / session complete</div><h1 className="report-title">{candidate.name || 'Candidate'}, your room is getting clearer.</h1><p className="report-copy">This is a practice signal, not a hiring verdict. Use the patterns below to decide what you rehearse next for {candidate.company || 'your target company'}.</p></div><div className="score-box" data-testid="card-overall-score"><div className="score-label">Overall rehearsal score</div><div className="score-value">{overall}<span style={{ fontSize: 29 }}>/100</span></div></div></div></section><section className="report-body page-frame"><div className="report-grid"><div className="report-card"><h2>Dimension readout</h2>{dimensions.map((dimension) => <div className="dimension" key={dimension.label} data-testid={`dimension-${dimension.label.toLowerCase().replaceAll(' ', '-')}`}><div className="dimension-head"><span>{dimension.label}</span><span className="dimension-score">{dimension.score}/100</span></div><div className="bar"><div className="bar-fill" style={{ width: `${dimension.score}%` }} /></div></div>)}<div className="report-card" style={{ marginTop: 28, boxShadow: 'none', background: '#f5f0e4' }}><h2>Question-by-question feedback</h2><div className="feedback-list">{sessionQuestions.map((question, index) => <div className="feedback-item" key={question.question}><p className="feedback-q">0{index + 1} / {question.dimension}</p><p className="feedback-a">{answers[index]?.text ? (answers[index].text.length > 145 ? `${answers[index].text.slice(0, 145)}...` : answers[index].text) : 'No written response captured. Use this prompt again with a clear opening, example, and result.'}</p><span className="feedback-tag">{scores[index] >= 70 ? 'Solid base' : 'Rehearse again'}</span></div>)}</div></div></div><div className="report-side"><div className="insight strength"><h3><Check size={20} /> Strengths</h3><ul><li>You showed up and completed the full timed room.</li><li>Your strongest signal is structured written thinking.</li></ul></div><div className="insight improve"><h3><Flag size={20} /> Improve next</h3><ul><li>Add specific metrics and outcomes to project stories.</li><li>Use a repeatable framework before diving into detail.</li></ul></div><div className="insight next"><h3><RotateCcw size={20} /> Next practice areas</h3><ul><li>STAR story: disagreement and resolution</li><li>Debugging aloud under a 90-second limit</li><li>Company-specific “why us” research</li></ul></div></div></div><div className="report-actions"><button className="neo-button" onClick={restart} data-testid="button-practice-again">PRACTICE AGAIN <RotateCcw size={17} /></button><button className="neo-button outline" onClick={() => setLocation('/')} data-testid="button-return-home"><ArrowLeft size={17} /> RETURN HOME</button></div></section></main></div>;
 }
 
 function Router() {

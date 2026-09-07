@@ -1,0 +1,417 @@
+IMPORTANT FINAL UPGRADE TO THE AI INTERVIEWER SYSTEM
+
+I need you to fix and implement the following requirements carefully. Do not just make cosmetic changes. Inspect the current implementation and modify the actual interviewer/avatar, voice, and company-selection logic.
+
+==================================================
+1. FEMALE AI INTERVIEWER MUST HAVE A FEMALE VOICE
+==================================================
+
+The current AI interviewer is a female character, but the voice being played is male.
+
+FIX THIS.
+
+Whenever the selected interviewer is female:
+- Use a natural professional FEMALE voice.
+- Never use the male/default browser voice.
+- Do not randomly select a male voice.
+- Do not fall back silently to a male voice.
+
+Create a proper voice configuration for every interviewer.
+
+Example:
+
+interviewer = {
+    gender: "female",
+    voice: "female_voice_id",
+    ...
+}
+
+If using browser SpeechSynthesis:
+- inspect speechSynthesis.getVoices()
+- select an appropriate female English voice
+- explicitly assign utterance.voice
+- do not rely on the browser's default voice
+
+If using an external TTS provider:
+- explicitly configure a female voice ID
+- make the voice match the selected interviewer
+
+The voice should sound:
+- professional
+- natural
+- confident
+- corporate
+- suitable for a placement interview
+
+==================================================
+2. THE INTERVIEWER MUST ACTUALLY FEEL ALIVE
+==================================================
+
+The current implementation still looks like a photograph.
+
+I do NOT want a static photograph with audio playing over it.
+
+I want a realistic fictional AI digital-human interviewer.
+
+The interviewer should naturally:
+
+- Blink
+- Move eyes naturally
+- Move head slightly
+- Change facial expression
+- Move shoulders subtly
+- Make subtle hand gestures
+- Move lips according to actual speech
+- Have natural speaking/listening behavior
+- Stop speaking movement when the audio stops
+
+The movements must NOT look like a looping GIF.
+
+Do not use obvious repetitive CSS animations.
+
+Do not randomly shake the image.
+
+Do not simply scale/zoom the image.
+
+Do not repeatedly open and close the mouth at a fixed interval.
+
+==================================================
+3. REAL LIP SYNC
+==================================================
+
+This is the highest priority visual requirement.
+
+The lips must correspond to the actual spoken audio.
+
+Flow:
+
+AI generates question
+        ↓
+TTS generates audio
+        ↓
+AI interviewer SPEAKING state
+        ↓
+Actual audio starts
+        ↓
+Lips/mouth animate according to speech
+        ↓
+Audio ends
+        ↓
+Mouth stops
+        ↓
+AI interviewer becomes LISTENING
+
+Use the actual audio playback lifecycle.
+
+If possible, use phoneme/viseme-based lip synchronization.
+
+If phoneme-level lip sync cannot be implemented using the current stack, use audio-driven mouth movement based on the actual audio amplitude/frequency rather than an unrelated timer.
+
+IMPORTANT:
+Do not claim that a static image is "lip synced."
+
+If true lip-sync requires a dedicated talking-avatar service, create the avatar component with a clean integration point for a future provider such as HeyGen, D-ID, Tavus, or another appropriate provider.
+
+==================================================
+4. NATURAL HUMAN MOVEMENT
+==================================================
+
+The interviewer should behave like a real corporate interviewer.
+
+SPEAKING:
+- Natural blinking
+- Lip synchronization
+- Subtle head movement
+- Natural facial expressions
+- Occasional subtle hand gesture
+- Slight body/shoulder movement
+
+LISTENING:
+- Stop mouth movement
+- Maintain attentive expression
+- Natural blinking
+- Occasional subtle head movement
+- Look engaged with the candidate
+
+THINKING/EVALUATING:
+- Subtle expression change
+- Small head movement
+- Natural blinking
+- No exaggerated animation
+
+Keep all movement subtle and professional.
+
+The candidate should feel:
+
+"Someone is actually sitting across from me and conducting the interview."
+
+==================================================
+5. DIFFERENT INTERVIEWER FOR DIFFERENT COMPANIES
+==================================================
+
+This is another major feature.
+
+DO NOT use one single interviewer for every company.
+
+Create an interviewer pool.
+
+For example:
+
+const interviewerPool = {
+    Google: [
+        interviewerA,
+        interviewerB,
+        interviewerC
+    ],
+
+    Microsoft: [
+        interviewerD,
+        interviewerE,
+        interviewerF
+    ],
+
+    Amazon: [
+        interviewerG,
+        interviewerH,
+        interviewerI
+    ],
+
+    Accenture: [
+        interviewerJ,
+        interviewerK,
+        interviewerL
+    ],
+
+    TCS: [
+        interviewerM,
+        interviewerN,
+        interviewerO
+    ]
+};
+
+These are fictional/AI-generated interviewers.
+
+They must NOT represent real Google/Microsoft/Amazon employees.
+
+==================================================
+6. ANONYMOUS INTERVIEWER IDENTITIES
+==================================================
+
+Do NOT show real people's names.
+
+Use anonymous identities such as:
+
+"AI Interviewer 01"
+"AI Interviewer 02"
+"AI Interviewer 03"
+
+or simply:
+
+"AI INTERVIEWER"
+
+The candidate does not need to know the interviewer's name.
+
+The visual identity, voice and behavior are what should change.
+
+==================================================
+7. INTERVIEWER SELECTION
+==================================================
+
+When the candidate selects a company:
+
+Company selected
+       ↓
+Select appropriate interviewer pool
+       ↓
+Randomly select one interviewer
+       ↓
+Load that interviewer's:
+- avatar
+- female voice
+- personality
+- speaking style
+- animation configuration
+       ↓
+Start interview
+
+Example:
+
+Candidate selects Google
+→ select one interviewer from Google pool
+
+Candidate selects Microsoft
+→ select one interviewer from Microsoft pool
+
+Candidate selects Accenture
+→ select one interviewer from Accenture pool
+
+Do not always select the same interviewer.
+
+Use a random selection system, but avoid immediately repeating the same interviewer in consecutive interviews.
+
+==================================================
+8. INTERVIEWER PERSONALITY
+==================================================
+
+Each interviewer should feel slightly different.
+
+For example:
+
+Interviewer A:
+- Calm
+- Formal
+- Technical
+- Precise
+
+Interviewer B:
+- Friendly
+- Professional
+- Conversational
+
+Interviewer C:
+- Serious
+- Fast-paced
+- Corporate
+
+The difference should be subtle.
+
+All interviewers must remain professional.
+
+==================================================
+9. COMPANY-SPECIFIC EXPERIENCE
+==================================================
+
+The interviewer should also match the selected interview track.
+
+For example:
+
+GOOGLE:
+- Technical depth
+- Problem solving
+- Algorithms
+- Projects
+- Engineering thinking
+
+MICROSOFT:
+- Problem solving
+- CS fundamentals
+- Projects
+- Behavioral questions
+
+ACCENTURE:
+- Communication
+- Technical fundamentals
+- Situational questions
+- Behavioral questions
+
+TCS:
+- Programming fundamentals
+- CS basics
+- Projects
+- Communication
+
+These should affect the questions and interviewer behavior, not imply that these are actual company interview questions.
+
+Add a disclaimer where appropriate:
+
+"Simulated interview experience — not an official company interview."
+
+==================================================
+10. IMPORTANT ARCHITECTURE
+==================================================
+
+Create a reusable component:
+
+<TalkingAIInterviewer
+    interviewer={selectedInterviewer}
+    state={interviewerState}
+    audioSource={currentAudio}
+/>
+
+And a configuration structure similar to:
+
+const interviewer = {
+    id: "ai-interviewer-01",
+    gender: "female",
+    avatar: "...",
+    voice: "...",
+    personality: "...",
+    companyTrack: "...",
+};
+
+The interviewer component should control:
+
+- avatar rendering
+- facial animation
+- lip sync
+- blinking
+- head movement
+- speaking state
+- listening state
+- thinking state
+
+Do not scatter this functionality throughout unrelated components.
+
+==================================================
+11. REQUIRED END-TO-END TEST
+==================================================
+
+Test this exact scenario:
+
+1. Candidate selects Google.
+2. A female interviewer is selected.
+3. A female voice is used.
+4. Female interviewer appears.
+5. She blinks naturally.
+6. She moves naturally.
+7. AI generates a question.
+8. She speaks the question.
+9. Her lips synchronize with the actual voice.
+10. She makes subtle natural gestures.
+11. She finishes speaking.
+12. She stops mouth movement.
+13. She enters LISTENING state.
+14. Candidate answers.
+15. AI evaluates the answer.
+16. Interview continues.
+17. Start another interview.
+18. The interviewer should be capable of changing.
+19. Select another company.
+20. A different interviewer from that company's pool should appear.
+21. The new interviewer must have the correct female voice and animation.
+
+==================================================
+
+MOST IMPORTANT:
+
+Do not prioritize adding new UI features over this.
+
+The priority is:
+
+REALISTIC AI FEMALE INTERVIEWER
++
+FEMALE NATURAL VOICE
++
+REAL LIP SYNC
++
+BLINKING
++
+EYE MOVEMENT
++
+HEAD MOVEMENT
++
+FACIAL EXPRESSIONS
++
+SUBTLE HAND GESTURES
++
+DIFFERENT INTERVIEWERS FOR DIFFERENT COMPANY TRACKS
++
+ANONYMOUS FICTIONAL IDENTITIES
+
+The final experience should NOT feel like:
+
+"Photo + male TTS voice"
+
+It should feel like:
+
+"A realistic fictional AI female interviewer is actually conducting my placement interview."

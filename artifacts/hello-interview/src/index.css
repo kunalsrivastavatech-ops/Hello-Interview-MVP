@@ -279,6 +279,7 @@ button { cursor: pointer; }
 .checkline { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 25px; font-size: 13px; line-height: 1.4; font-weight: 600; }
 .checkline input { width: 18px; height: 18px; margin-top: 1px; accent-color: #059669; flex-shrink: 0; }
 .error-copy { margin: -13px 0 18px; color: #b42318; font-family: var(--app-font-mono); font-size: 11px; font-weight: 500; }
+.simulated-disclaimer { margin: -11px 0 22px; color: #65746b; font-family: var(--app-font-mono); font-size: 10px; line-height: 1.4; }
 .checkpoint { padding: 26px; border: 3px solid #061006; background: #111c16; color: white; box-shadow: var(--shadow-neo); }
 .checkpoint h3 { margin: 0 0 17px; color: #7af1e4; font-size: 24px; line-height: 1; letter-spacing: -.04em; text-transform: uppercase; }
 .checkpoint p { color: #d4ded7; font-size: 14px; line-height: 1.55; }
@@ -321,6 +322,7 @@ button { cursor: pointer; }
 .replay-question { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #52675a; background: transparent; color: #b8c8bd; padding: 6px 8px; font-family: var(--app-font-mono); font-size: 9px; cursor: pointer; }.replay-question:hover { border-color: #7af1e4; color: #7af1e4; }.replay-question:disabled { cursor: not-allowed; opacity: .45; }
 .interviewer-flow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }.interviewer-flow span { color: #718176; font-family: var(--app-font-mono); font-size: 9px; letter-spacing: .04em; }.interviewer-flow span:not(:last-child)::after { content: '→'; margin-left: 6px; color: #52675a; }.interviewer-flow span.current { color: #7af1e4; }
 .interviewer-prompt { margin-top: 15px; padding: 10px 12px; border-left: 2px solid #10b981; background: rgba(255, 255, 255, .045); }.interviewer-prompt span { color: #7af1e4; font-family: var(--app-font-mono); font-size: 9px; letter-spacing: .1em; }.interviewer-prompt p { margin: 6px 0 0; color: #dce7df; font-size: 13px; line-height: 1.4; }
+.interviewer-personality { color: #81978a; }.interviewer-voice-status { margin: 7px 2px 0; color: #7af1e4; font-family: var(--app-font-mono); font-size: 9px; letter-spacing: .04em; line-height: 1.35; }.interviewer-voice-status.error { color: #ff9687; }
 .media-caption { color: #a9b8ae; font-size: 12px; line-height: 1.5; margin: 12px 2px 0; }
 .camera-viewport { position: relative; height: 194px; margin-top: 14px; background: #0b120e; border: 2px solid #506359; display: grid; place-items: center; overflow: hidden; }
 .camera-viewport.live { border-color: #10b981; }

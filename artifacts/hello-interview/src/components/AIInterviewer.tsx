@@ -1,5 +1,5 @@
 import { BrainCircuit, Volume2 } from 'lucide-react';
-import portraitUrl from '@assets/generated_images/ai-interviewer-portrait.png';
+import type { InterviewerConfig } from '@/interviewers';
 
 export type InterviewerState = 'ready' | 'speaking' | 'listening' | 'evaluating' | 'next';
 export type InterviewerSpeechSignal = {
@@ -9,10 +9,13 @@ export type InterviewerSpeechSignal = {
 
 type AIInterviewerProps = {
   state: InterviewerState;
+  interviewer: InterviewerConfig;
   question: string;
   onReplay: () => void;
   replayDisabled?: boolean;
   speechSignal?: InterviewerSpeechSignal;
+  voiceLabel?: string;
+  voiceError?: string;
 };
 
 const stateMeta: Record<InterviewerState, { label: string; caption: string }> = {
@@ -30,7 +33,7 @@ const flowStates: InterviewerState[] = ['ready', 'speaking', 'listening', 'evalu
  * provider can consume the same state and speech signals without changing the
  * interview engine or the surrounding Hello Interview UI.
  */
-export function AIInterviewer({ state, question, onReplay, replayDisabled = false, speechSignal = { type: 'idle', sequence: 0 } }: AIInterviewerProps) {
+export function AIInterviewer({ state, interviewer, question, onReplay, replayDisabled = false, speechSignal = { type: 'idle', sequence: 0 }, voiceLabel, voiceError }: AIInterviewerProps) {
   const meta = stateMeta[state];
   const isSpeaking = state === 'speaking';
   const waveformPattern = [7, 13, 20, 15, 9];
@@ -47,12 +50,12 @@ export function AIInterviewer({ state, question, onReplay, replayDisabled = fals
         <div className="interviewer-orbit orbit-one" />
         <div className="interviewer-orbit orbit-two" />
         <div className="interviewer-portrait-frame">
-          <img className="interviewer-portrait" src={portraitUrl} alt="Professional AI interviewer" />
+          <img className="interviewer-portrait" src={interviewer.avatar} alt={`${interviewer.displayName}, professional AI interviewer`} />
         </div>
         <div className={`interviewer-signal ${speechSignal.type}`} aria-hidden="true" key={speechSignal.sequence}>
           {waveformPattern.map((height, index) => <span key={index} style={{ height: `${isSpeaking && speechSignal.type === 'boundary' ? waveformPattern[(speechSignal.sequence + index) % waveformPattern.length] : height}px` }} />)}
         </div>
-        <div className="interviewer-presence"><BrainCircuit size={14} /> CORPORATE INTERVIEWER / VOICE LINKED</div>
+        <div className="interviewer-presence"><BrainCircuit size={14} /> {interviewer.displayName} / CORPORATE INTERVIEWER</div>
       </div>
 
       <div className="interviewer-state-row">
@@ -62,7 +65,8 @@ export function AIInterviewer({ state, question, onReplay, replayDisabled = fals
           <Volume2 size={14} /> REPLAY
         </button>
       </div>
-      <p className="media-caption" aria-live="polite">{meta.caption}</p>
+      <p className="media-caption" aria-live="polite">{meta.caption} <span className="interviewer-personality">Style: {interviewer.personality}.</span></p>
+      <p className={`interviewer-voice-status ${voiceError ? 'error' : ''}`} role={voiceError ? 'alert' : 'status'}>{voiceError || `${voiceLabel || interviewer.voice.label} · ${interviewer.gender} voice configured`}</p>
 
       <div className="interviewer-prompt">
         <span>CURRENT QUESTION</span>
